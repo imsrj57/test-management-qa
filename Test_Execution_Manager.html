@@ -1,0 +1,961 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#10233f">
+  <title>Test Execution Manager</title>
+  <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <style>
+    :root{font-family:Inter,"Segoe UI",Arial,sans-serif;color:#17263d;background:#f4f7fb;font-synthesis:none;font-size:14px}
+    *{box-sizing:border-box}body{margin:0;min-width:320px}button,input,select,textarea{font:inherit}
+    button{border:0;border-radius:7px;padding:9px 13px;background:#1769d2;color:#fff;cursor:pointer;font-weight:600}
+    button:hover{background:#0e55b5}button.secondary{color:#25415f;background:#e9eff7}button.secondary:hover{background:#dce7f3}
+    button.danger{background:#c33c4b}button.danger:hover{background:#a92b39}button:disabled{opacity:.55;cursor:not-allowed}
+    input,select,textarea{border:1px solid #d5deea;border-radius:6px;padding:9px;background:#fff;color:#17263d}
+    input:focus,select:focus,textarea:focus{outline:2px solid #a9ccf8;border-color:#5092e5}textarea{resize:vertical;min-height:75px}
+    .topbar{height:66px;background:#10233f;color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 25px;gap:15px}
+    .brand{font-size:18px;font-weight:700;letter-spacing:.2px}.brand span{color:#6eb2ff}.top-actions{display:flex;align-items:center;gap:10px}
+    .top-actions select{max-width:230px}.layout{display:flex;min-height:calc(100vh - 66px)}
+    aside{width:218px;background:#fff;border-right:1px solid #e3eaf2;padding:19px 12px;flex-shrink:0}
+    .nav{display:grid;gap:5px}.nav button{background:transparent;color:#52647a;text-align:left;font-weight:600}.nav button.active,.nav button:hover{background:#eaf3ff;color:#145db5}
+    main{padding:27px clamp(16px,3vw,38px);width:min(1500px,100%);margin:0 auto}
+    .main-wrap{flex:1;min-width:0}.page-head{display:flex;align-items:flex-start;justify-content:space-between;gap:15px;margin-bottom:22px}
+    h1{font-size:25px;margin:0 0 6px;color:#142844}h2{font-size:17px;margin:0 0 14px}h3{font-size:14px;margin:0 0 10px}
+    p.subtle,.subtle{color:#718096;margin:0}.actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+    .card{background:#fff;border:1px solid #e4eaf2;border-radius:11px;padding:18px;box-shadow:0 3px 12px #16375a0a;margin-bottom:16px}
+    .stats{display:grid;grid-template-columns:repeat(5,minmax(120px,1fr));gap:12px;margin-bottom:18px}.stat{background:#fff;border:1px solid #e4eaf2;border-radius:10px;padding:15px}
+    .stat small{display:block;color:#718096;margin-bottom:7px}.stat strong{font-size:23px}.blue{color:#1769d2}.green{color:#218653}.red{color:#c33c4b}.amber{color:#b77713}
+    .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:13px}.toolbar input[type=search]{min-width:210px}
+    .table-wrap{overflow:auto;border:1px solid #e6ebf2;border-radius:8px}table{width:100%;border-collapse:collapse;min-width:780px;background:#fff}
+    th,td{padding:11px 12px;border-bottom:1px solid #edf1f5;text-align:left;vertical-align:top;max-width:310px;overflow-wrap:anywhere}
+    th{background:#f7f9fc;color:#52647a;font-size:12px;position:sticky;top:0;z-index:1}tr:last-child td{border-bottom:0}
+    .pill{display:inline-block;padding:4px 8px;border-radius:30px;font-size:11px;font-weight:700;background:#edf1f5;color:#607087}
+    .pill.Pass{background:#e5f5ec;color:#218653}.pill.Fail{background:#ffeaec;color:#b53242}.pill.Pending{background:#fff4db;color:#a86a00}
+    .mark-pass{background:#218653}.mark-pass:hover{background:#176c43}.mark-fail{background:#c33c4b}.mark-fail:hover{background:#a92b39}
+    .actions-icon{display:flex;align-items:center;gap:6px;flex-wrap:nowrap;min-width:190px}
+    button.icon-button{width:34px;height:34px;padding:0;display:inline-flex;align-items:center;justify-content:center;border-radius:7px;flex:0 0 auto}
+    button.icon-button svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+    button.icon-button.secondary{background:#e9eff7;color:#25415f}button.icon-button.secondary:hover{background:#dce7f3}
+    button.icon-button.mark-pass{background:#218653;color:#fff}button.icon-button.mark-fail{background:#c33c4b;color:#fff}
+    button.icon-button.archive-action{background:#fff0f0;color:#a52e3b}button.icon-button.archive-action:hover{background:#ffdddd}
+    .paste-zone{border:1px dashed #91a9c5;border-radius:7px;padding:10px;color:#52647a;background:#f7faff;cursor:text;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    .paste-zone:focus,.paste-zone.dragging{outline:2px solid #a9ccf8;border-color:#5092e5;background:#edf5ff}
+    .thumbs .evidence-preview{position:relative;display:grid;gap:3px;max-width:112px}.thumbs .evidence-preview img{width:100px;height:72px}
+    .evidence-preview button{position:absolute;right:4px;top:3px;padding:2px 6px;background:#a52e3b;font-size:11px}
+    .inline-case-row td{background:#fbfdff}.inline-case-row input,.inline-case-row select,.inline-case-row textarea{width:100%;min-width:100px;padding:7px;font-size:13px}.inline-case-row textarea{min-height:44px}
+    .paste-hint{grid-column:1/-1;color:#52647a;background:#f3f7fc;padding:9px 11px;border-radius:6px}
+    .empty{color:#718096;text-align:center;padding:35px 12px}.progress{height:8px;border-radius:20px;background:#e7edf5;overflow:hidden}.progress i{display:block;height:100%;background:#2376dc}
+    .field-row,.sheet-row{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid #edf1f5}.field-row:last-child,.sheet-row:last-child{border-bottom:0}
+    .field-row .grow,.sheet-row .grow{flex:1}.field-row small,.sheet-row small{color:#718096}.field-row select{max-width:145px}.sheet-columns{padding-left:22px;border-bottom:1px solid #edf1f5}
+    .notice{border-radius:8px;padding:10px 12px;background:#edf5ff;color:#255685;margin:10px 0}.notice.error{background:#fff0f0;color:#a52e3b}
+    .inline-form{display:grid;grid-template-columns:repeat(3,minmax(130px,1fr));gap:9px;margin:12px 0}.inline-form .span2{grid-column:span 2}
+    .checks{display:flex;gap:12px;flex-wrap:wrap}.checks label{display:flex;align-items:center;gap:6px}
+    dialog{border:0;border-radius:12px;box-shadow:0 14px 60px #10233f55;width:min(760px,calc(100% - 24px));padding:0;color:#17263d}
+    dialog::backdrop{background:#10233f66}.dialog-head{padding:18px 22px;border-bottom:1px solid #e9edf3;display:flex;justify-content:space-between}
+    .dialog-body{padding:18px 22px;max-height:70vh;overflow:auto}.dialog-foot{padding:14px 22px;border-top:1px solid #e9edf3;display:flex;justify-content:flex-end;gap:8px}
+    .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.form-grid label{display:grid;gap:5px;color:#52647a;font-size:12px;font-weight:600}.form-grid .wide{grid-column:1/-1}
+    .thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.thumbs img{width:84px;height:68px;object-fit:cover;border:1px solid #dce4ef;border-radius:6px}
+    #toast{position:fixed;right:20px;bottom:20px;padding:12px 16px;border-radius:8px;background:#173d69;color:#fff;box-shadow:0 7px 25px #10233f30;display:none;max-width:min(420px,calc(100% - 40px));z-index:9}
+    .muted{color:#718096}.right{margin-left:auto}.section-label{color:#718096;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin:19px 0 8px}
+    .evidence-link{color:#1769d2;text-decoration:underline;cursor:pointer;background:none;padding:0;font-weight:500}
+    @media(max-width:850px){.layout{display:block}aside{width:auto;padding:7px 12px;border-right:0;border-bottom:1px solid #e3eaf2}.nav{display:flex;overflow:auto}.nav button{white-space:nowrap}main{padding:18px 14px}.stats{grid-template-columns:repeat(2,minmax(120px,1fr))}}
+    @media(max-width:560px){.topbar{padding:0 12px}.brand{font-size:15px}.top-actions select{max-width:135px}.top-actions button{padding:8px}.inline-form,.form-grid{grid-template-columns:1fr}.inline-form .span2{grid-column:auto}.page-head{display:block}.page-head>.actions{margin-top:12px}}
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span>Test</span> Execution Manager</div>
+    <div class="top-actions">
+      <select id="projectSelect" aria-label="Current project"></select>
+      <button class="secondary" id="newProject">New project</button>
+    </div>
+  </header>
+  <div class="layout">
+    <aside><nav class="nav" id="nav">
+      <button data-page="workspace" class="active">Test cases</button>
+      <button data-page="dashboard">Dashboard</button>
+      <button data-page="fields">Field manager</button>
+      <button data-page="worksheets">Worksheet manager</button>
+      <button data-page="history">Execution history</button>
+      <button data-page="settings">Project settings</button>
+    </nav></aside>
+    <div class="main-wrap"><main id="app"></main></div>
+  </div>
+  <dialog id="caseDialog">
+    <form id="caseForm">
+      <div class="dialog-head"><h2 id="caseTitle">Test case</h2><button type="button" class="secondary" data-close>Close</button></div>
+      <div class="dialog-body"><div class="form-grid" id="caseFields"></div></div>
+      <div class="dialog-foot"><button type="button" class="secondary" data-close>Cancel</button><button type="submit">Save test case</button></div>
+    </form>
+  </dialog>
+  <dialog id="executeDialog">
+    <form id="executeForm">
+      <div class="dialog-head"><h2 id="executeTitle">Execute test case</h2><button type="button" class="secondary" data-close>Close</button></div>
+      <div class="dialog-body">
+        <div id="executionContext" class="notice"></div>
+        <div class="form-grid">
+          <label class="wide">Actual result<textarea name="actual" required></textarea></label>
+          <label>Status<select name="status" required><option>Pass</option><option>Fail</option></select></label>
+          <label>Evidence screenshots<input name="screenshots" type="file" accept="image/*" multiple><small>Upload images, or click the paste area below and press Ctrl+V.</small></label>
+          <div class="wide paste-zone" data-paste-zone tabindex="0" contenteditable="true" role="textbox" aria-label="Paste screenshots">Click here, then press Ctrl+V to paste a screenshot, or use the clipboard button.</div>
+          <button type="button" class="secondary" data-read-clipboard>Paste from clipboard</button>
+          <label class="wide">Execution comments<textarea name="comments"></textarea></label>
+          <div class="wide"><div class="thumbs" id="preview"></div></div>
+        </div>
+      </div>
+      <div class="dialog-foot"><button type="button" class="secondary" data-close>Cancel</button><button type="submit">Save attempt</button></div>
+    </form>
+  </dialog>
+  <dialog id="inputDialog">
+    <form id="inputForm">
+      <div class="dialog-head"><h2 id="inputTitle">Enter value</h2><button type="button" class="secondary" data-input-cancel>Close</button></div>
+      <div class="dialog-body"><label id="inputLabel" style="display:grid;gap:8px"></label></div>
+      <div class="dialog-foot"><button type="button" class="secondary" data-input-cancel>Cancel</button><button type="submit">Continue</button></div>
+    </form>
+  </dialog>
+  <div id="toast" role="status"></div>
+  <script>
+  (() => {
+    "use strict";
+    const DB_NAME = "TestExecutionManager", DB_VERSION = 1;
+    const STORE_NAMES = ["projects","cases","fields","worksheets","rounds","attempts","evidence","evidenceBinary","settings"];
+    const $ = (s, root=document) => root.querySelector(s), $$ = (s, root=document) => [...root.querySelectorAll(s)];
+    const uid = () => crypto.randomUUID ? crypto.randomUUID() : "id-" + Date.now().toString(36) + Math.random().toString(36).slice(2);
+    const ICONS={
+      edit:'<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/>',
+      pass:'<path d="m5 12 4 4L19 6"/>',
+      fail:'<path d="m6 6 12 12M18 6 6 18"/>',
+      copy:'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/>',
+      archive:'<rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9"/><path d="M10 13h4"/>',
+      execute:'<path d="m8 5 12 7-12 7z"/>',
+      restore:'<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>'
+    };
+    function iconButton(icon,label,classes,id,extra="") {
+      return `<button type="button" class="icon-button ${classes}" data-id="${escapeHtml(id)}" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}" ${extra}><svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[icon]}</svg></button>`;
+    }
+    const safeText = value => String(value ?? "");
+    const escapeHtml = value => safeText(value).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+    let db, projectId, page = "workspace", toastTimer, selectedCases = new Set(), activeAttemptFiles = [], activePendingEvidence=[], executionPreviewUrls = [], activeCaseEvidenceAdder=null, activeExecutionEvidenceAdder=null, showArchivedCases=false;
+    const defaultFields = [
+      ["Test Case ID","text",true],["Description","longtext",true],["Expected Result","longtext",false],
+      ["Actual Result","longtext",false],["Status","dropdown",false],["Screenshot","text",false],["Comments","longtext",false]
+    ];
+    function openDB() {
+      return new Promise((resolve,reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        request.onupgradeneeded = () => {
+          const d = request.result;
+          for (const name of STORE_NAMES) {
+            if (!d.objectStoreNames.contains(name)) {
+              const store = d.createObjectStore(name,{keyPath:"id"});
+              store.createIndex("projectId","projectId",{unique:false});
+            }
+          }
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error || new Error("Could not open browser storage."));
+        request.onblocked = () => reject(new Error("Storage upgrade is blocked by another open application tab."));
+      });
+    }
+    function req(request) { return new Promise((resolve,reject) => { request.onsuccess=()=>resolve(request.result); request.onerror=()=>reject(request.error); }); }
+    async function all(storeName) { return req(db.transaction(storeName,"readonly").objectStore(storeName).getAll()); }
+    async function byProject(storeName, id=projectId) { return req(db.transaction(storeName,"readonly").objectStore(storeName).index("projectId").getAll(id)); }
+    async function put(storeName, value) { return req(db.transaction(storeName,"readwrite").objectStore(storeName).put(value)); }
+    function saveExecution(attempt,evidenceRows,caseRecord) {
+      return new Promise((resolve,reject)=>{
+        const tx=db.transaction(["attempts","evidence","evidenceBinary","cases"],"readwrite");
+        tx.objectStore("attempts").put(attempt);tx.objectStore("cases").put(caseRecord);
+        for(const row of evidenceRows){tx.objectStore("evidence").put(row.metadata);tx.objectStore("evidenceBinary").put(row.binary);}
+        tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error||new Error("Could not save execution evidence."));tx.onabort=()=>reject(tx.error||new Error("Execution save was cancelled."));
+      });
+    }
+    function saveCaseEvidence(caseRecord,evidenceRows) {
+      return new Promise((resolve,reject)=>{
+        const tx=db.transaction(["cases","evidence","evidenceBinary"],"readwrite");
+        tx.objectStore("cases").put(caseRecord);
+        for(const row of evidenceRows){tx.objectStore("evidence").put(row.metadata);tx.objectStore("evidenceBinary").put(row.binary);}
+        tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error||new Error("Could not save test case screenshots."));tx.onabort=()=>reject(tx.error||new Error("Test case save was cancelled."));
+      });
+    }
+    async function remove(storeName, id) { return req(db.transaction(storeName,"readwrite").objectStore(storeName).delete(id)); }
+    async function removeProjectRecords(storeName,id) {
+      const tx=db.transaction(storeName,"readwrite"), idx=tx.objectStore(storeName).index("projectId"), cursor=idx.openCursor(id);
+      await new Promise((resolve,reject)=>{cursor.onsuccess=()=>{const c=cursor.result;if(c){c.delete();c.continue();}else resolve();};cursor.onerror=()=>reject(cursor.error);});
+    }
+    function notify(message, error=false) {
+      const el=$("#toast"); el.textContent=message; el.style.background=error?"#a52e3b":"#173d69"; el.style.display="block";
+      clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.style.display="none",4200);
+    }
+    function askInput(title,label,{value="",options=null,required=true}={}) {
+      return new Promise(resolve=>{
+        const dialog=$("#inputDialog"),form=$("#inputForm"),holder=$("#inputLabel");
+        $("#inputTitle").textContent=title;
+        const submitButton=$('button[type="submit"]',form);submitButton.textContent="Continue";submitButton.classList.remove("danger");
+        holder.innerHTML=`${escapeHtml(label)}${options?`<select name="answer" ${required?"required":""}>${options.map(o=>`<option value="${escapeHtml(o.value)}" ${o.value===value?"selected":""}>${escapeHtml(o.label)}</option>`).join("")}</select>`:`<input name="answer" value="${escapeHtml(value)}" ${required?"required":""}>`}`;
+        let settled=false,submit,cancel,onCancel;
+        const cancelButtons=$$("[data-input-cancel]",form);
+        const finish=result=>{if(settled)return;settled=true;form.removeEventListener("submit",submit);cancelButtons.forEach(button=>button.removeEventListener("click",cancel));dialog.removeEventListener("cancel",onCancel);dialog.close();resolve(result);};
+        cancel=()=>finish(null);
+        submit=e=>{e.preventDefault();finish(form.elements.answer.value);};
+        onCancel=cancel;
+        form.addEventListener("submit",submit);cancelButtons.forEach(button=>button.addEventListener("click",cancel));
+        dialog.addEventListener("cancel",onCancel);
+        dialog.showModal();form.elements.answer.focus();
+      });
+    }
+    function askConfirm(message,{danger=false,confirmText="Confirm"}={}) {
+      return new Promise(resolve=>{
+        const dialog=$("#inputDialog"),form=$("#inputForm"),holder=$("#inputLabel");
+        $("#inputTitle").textContent="Please confirm";
+        holder.innerHTML=`<p>${escapeHtml(message)}</p>`;
+        const submitButton=$('button[type="submit"]',form);submitButton.textContent=confirmText;submitButton.classList.toggle("danger",danger);
+        const cancelButtons=$$("[data-input-cancel]",form);
+        let settled=false,submit,cancel,onCancel;
+        const finish=result=>{if(settled)return;settled=true;form.removeEventListener("submit",submit);cancelButtons.forEach(button=>button.removeEventListener("click",cancel));dialog.removeEventListener("cancel",onCancel);dialog.close();resolve(result);};
+        submit=e=>{e.preventDefault();finish(true);};cancel=()=>finish(false);onCancel=cancel;
+        form.addEventListener("submit",submit);cancelButtons.forEach(button=>button.addEventListener("click",cancel));
+        dialog.addEventListener("cancel",onCancel);dialog.showModal();
+      });
+    }
+    function fail(error) {
+      console.error(error);
+      const message = error && error.name === "QuotaExceededError" ? "Browser storage is full. Export a project backup or remove unused evidence, then try again." : (error?.message || "The operation could not be completed.");
+      notify(message,true);
+    }
+    const dateTime = value => value ? new Date(value).toLocaleString() : "";
+    const statusPill = status => `<span class="pill ${escapeHtml(status||"Pending")}">${escapeHtml(status||"Pending")}</span>`;
+    async function seed() {
+      const existing=await all("projects");
+      if(existing.length) { projectId=existing[0].id; return; }
+      const p={id:uid(),name:"My QA Project",createdAt:Date.now(),archived:false};
+      await put("projects",p); projectId=p.id;
+      for(const [index,[label,type,required]] of defaultFields.entries()) await put("fields",{id:uid(),projectId,label,type,required,visible:true,archived:false,options:type==="dropdown"&&label==="Status"?["Pending","Pass","Fail"]:[],system:true,order:index});
+      const fields=(await byProject("fields")).sort((a,b)=>a.order-b.order);
+      await put("worksheets",{id:uid(),projectId,name:"Test Case Master",order:0,visible:true,columns:fields.filter(f=>!f.archived).map((f,i)=>({id:uid(),label:f.label,fieldId:f.id,order:i,visible:true}))});
+    }
+    async function projectData() {
+      const [projects,cases,fields,worksheets,rounds,attempts,evidence]=await Promise.all([
+        all("projects"),byProject("cases"),byProject("fields"),byProject("worksheets"),byProject("rounds"),byProject("attempts"),byProject("evidence")
+      ]);
+      fields.sort((a,b)=>a.order-b.order); worksheets.sort((a,b)=>{a.columns.sort((x,y)=>x.order-y.order);return a.order-b.order;}); rounds.sort((a,b)=>a.createdAt-b.createdAt);
+      return {projects,cases,fields,worksheets,rounds,attempts,evidence};
+    }
+    function currentRound(data) { return data.rounds.find(r=>r.id===data.settings?.currentRoundId) || data.rounds.find(r=>!r.completedAt); }
+    async function render() {
+      try {
+        const data=await projectData(), active=data.projects.find(p=>p.id===projectId) || data.projects[0];
+        if(!active) throw new Error("No project is available.");
+        projectId=active.id;
+        const select=$("#projectSelect"); select.innerHTML=data.projects.map(p=>`<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)}${p.archived?" (Archived)":""}</option>`).join(""); select.value=projectId;
+        const settings=(await byProject("settings")).find(x=>x.key==="current")?.value||{};
+        data.settings=settings;
+        const title={workspace:"Test case workspace",dashboard:"Execution dashboard",fields:"Field manager",worksheets:"Worksheet manager",history:"Execution history",settings:"Project settings"}[page];
+        $("#app").innerHTML=`<div class="page-head"><div><h1>${title}</h1><p class="subtle">${escapeHtml(active.name)} · changes save automatically in this browser</p></div>${page==="workspace"?`<div class="actions"><button id="generateReport">Generate Final Report</button></div>`:""}</div>${await pageMarkup(page,data)}`;
+        $$("#nav button").forEach(b=>b.classList.toggle("active",b.dataset.page===page));
+        bindPage(data);
+      } catch(error) { fail(error); }
+    }
+    async function pageMarkup(which,d) {
+      if(which==="workspace") return workspaceMarkup(d);
+      if(which==="dashboard") return dashboardMarkup(d);
+      if(which==="fields") return fieldsMarkup(d);
+      if(which==="worksheets") return sheetsMarkup(d);
+      if(which==="history") return historyMarkup(d);
+      return settingsMarkup(d);
+    }
+    function latestFor(caseId,roundId,attempts) {
+      return attempts.filter(a=>a.caseId===caseId&&a.roundId===roundId).sort((a,b)=>a.at-b.at).at(-1);
+    }
+    function activeFields(d) { return d.fields.filter(f=>!f.archived&&f.visible!==false); }
+    function editableFields(d) { return d.fields.filter(f=>!f.archived); }
+    function caseStatus(c,d) {
+      const r=d.rounds.find(x=>x.id===d.settings?.currentRoundId)||d.rounds.filter(x=>x.completedAt).at(-1);
+      return r?latestFor(c.id,r.id,d.attempts)?.status||"Pending":"Pending";
+    }
+    function roundSummary(round,d) {
+      const ids=round.caseIds||[], latest=ids.map(id=>latestFor(id,round.id,d.attempts)).filter(Boolean);
+      const passed=latest.filter(a=>a.status==="Pass").length, failed=latest.filter(a=>a.status==="Fail").length;
+      return {total:ids.length,passed,failed,pending:Math.max(0,ids.length-latest.length),complete:ids.length?Math.round(latest.length/ids.length*100):0};
+    }
+    function workspaceMarkup(d) {
+      const fields=activeFields(d), settings=d.settings||{}, round=d.rounds.find(r=>r.id===settings.currentRoundId);
+      let cases=showArchivedCases?d.cases.filter(c=>c.archived):d.cases.filter(c=>!c.archived);
+      const roundIds=round?.caseIds;
+      if(roundIds&&!showArchivedCases) cases=cases.filter(c=>roundIds.includes(c.id));
+      const previousRound=round?.type==="retest"?d.rounds.find(r=>r.id===round.sourceRoundId):null;
+      const rows=cases.map(c=>`<tr><td><input type="checkbox" class="select-case" value="${escapeHtml(c.id)}" ${selectedCases.has(c.id)?"checked":""}></td>${previousRound?`<td>${statusPill(latestFor(c.id,previousRound.id,d.attempts)?.status||"Pending")}</td>`:""}${fields.map(f=>`<td>${f.label.toLowerCase()==="status"?statusPill(caseStatus(c,d)):f.label.toLowerCase()==="screenshot"?pendingEvidenceCell(c,d):escapeHtml(c.values?.[f.id]??"")}</td>`).join("")}<td><div class="actions actions-icon">${iconButton("edit","Edit test case","secondary edit-case",c.id)}${c.archived?iconButton("restore","Restore test case","secondary unarchive-case",c.id):`${iconButton("pass","Mark pass","mark-pass",c.id,`data-status="Pass" ${round?.completedAt?"disabled":""}`)}${iconButton("fail","Mark fail","mark-fail",c.id,`data-status="Fail" ${round?.completedAt?"disabled":""}`)}${iconButton("execute","Execute with evidence","execute-case",c.id,round?.completedAt?"disabled":"")}${iconButton("copy","Duplicate test case","secondary duplicate-case",c.id)}${iconButton("archive","Archive test case","archive-action archive-case",c.id)}`}</div></td></tr>`).join("");
+      const draftRow=`<tr class="inline-case-row"><td></td>${previousRound?"<td></td>":""}${fields.map((f,i)=>`<td>${inlineCaseControl(f,i)}</td>`).join("")}<td><span class="subtle">Enter to add · Tab from last field to add</span></td></tr>`;
+      const stats=round?roundSummary(round,d):{total:cases.length,passed:0,failed:0,pending:cases.length,complete:0};
+      const rounds=d.rounds.map(r=>`<option value="${escapeHtml(r.id)}" ${settings.currentRoundId===r.id?"selected":""}>${escapeHtml(r.name)}${r.completedAt?" · completed":""}</option>`).join("");
+      return `<div class="card"><div class="toolbar"><strong>Execution round</strong><select id="roundSelect"><option value="">No active round</option>${rounds}</select><button id="newRound">New round</button><button class="secondary" id="retestRound">Retest failed</button><button class="secondary" id="regressionRound">Regression</button><button class="secondary" id="completeRound" ${!round||round.completedAt?"disabled":""}>Complete round</button><span class="right subtle">${round?`${escapeHtml(round.name)} · ${stats.passed} pass · ${stats.failed} fail · ${stats.pending} pending`:"Create a round to execute cases"}</span></div>${round?`<div class="progress"><i style="width:${stats.complete}%"></i></div>`:""}</div>
+      <div class="card"><div class="toolbar"><input type="search" id="caseSearch" placeholder="Search test cases"><select id="statusFilter"><option value="">All statuses</option><option>Pending</option><option>Pass</option><option>Fail</option></select><button id="addCase">Add test case</button><button class="secondary" id="importExcel">Import Excel</button><input id="excelFile" type="file" accept=".xlsx" hidden><button class="secondary" id="toggleArchived">${showArchivedCases?"Show active cases":"Show archived cases"}</button><button class="secondary" id="bulkArchive" ${showArchivedCases?"disabled":""}>Archive selected</button></div>
+      <div class="toolbar"><span class="subtle">${d.cases.filter(c=>!c.archived).length} active test case${d.cases.filter(c=>!c.archived).length===1?"":"s"} · ${cases.length} visible in this view · ${d.attempts.length} execution attempt${d.attempts.length===1?"":"s"}</span></div>
+      <div class="table-wrap"><table><thead><tr><th><input type="checkbox" id="selectAll" aria-label="Select all"></th>${previousRound?"<th>Previous result</th>":""}${fields.map(f=>`<th>${escapeHtml(f.label)}${f.required?" *":""}</th>`).join("")}<th>Actions</th></tr></thead><tbody>${rows}${draftRow}</tbody></table></div></div>`;
+    }
+    function inlineCaseControl(field,index) {
+      const common=`class="inline-case-input" data-field="${escapeHtml(field.id)}" ${index===0?'data-first="true"':''} aria-label="${escapeHtml(field.label)}${field.required?" (required)":""}"`;
+      if(field.label.toLowerCase()==="screenshot")return `<span class="subtle">Attach in Edit or Execute</span>`;
+      if(field.label.toLowerCase()==="status")return `<span class="subtle">Set with Pass/Fail</span>`;
+      if(field.type==="longtext")return `<textarea ${common} placeholder="${escapeHtml(field.label)}${field.required?" *":""}"></textarea>`;
+      if(field.type==="dropdown")return `<select ${common}><option value="">${escapeHtml(field.label)}</option>${(field.options||[]).map(o=>`<option value="${escapeHtml(o)}">${escapeHtml(o)}</option>`).join("")}</select>`;
+      if(field.type==="multiselect")return `<select ${common} multiple aria-label="${escapeHtml(field.label)}">${(field.options||[]).map(o=>`<option value="${escapeHtml(o)}">${escapeHtml(o)}</option>`).join("")}</select>`;
+      if(field.type==="checkbox")return `<input ${common} type="checkbox">`;
+      return `<input ${common} type="${field.type==="number"?"number":field.type==="date"?"date":"text"}" placeholder="${escapeHtml(field.label)}${field.required?" *":""}">`;
+    }
+    function pendingEvidenceCell(record,data) {
+      const items=(record.pendingEvidenceIds||[]).map(id=>data.evidence.find(e=>e.id===id)).filter(Boolean);
+      return items.length?items.map((item,index)=>`<button type="button" class="evidence-link view-case-evidence" data-id="${escapeHtml(item.id)}">${index+1}. ${escapeHtml(item.originalName)}</button>`).join("<br>"):"";
+    }
+    function dashboardMarkup(d) {
+      const round=d.rounds.find(r=>r.id===d.settings?.currentRoundId)||d.rounds.filter(r=>r.completedAt).at(-1);
+      const s=round?roundSummary(round,d):{total:d.cases.filter(c=>!c.archived).length,passed:0,failed:0,pending:d.cases.filter(c=>!c.archived).length,complete:0};
+      const allLatest=d.cases.filter(c=>!c.archived).map(c=>round?latestFor(c.id,round.id,d.attempts):null).filter(Boolean);
+      return `<div class="stats"><div class="stat"><small>Test cases in round</small><strong>${s.total}</strong></div><div class="stat"><small>Passed</small><strong class="green">${s.passed}</strong></div><div class="stat"><small>Failed</small><strong class="red">${s.failed}</strong></div><div class="stat"><small>Pending</small><strong class="amber">${s.pending}</strong></div><div class="stat"><small>Completion</small><strong class="blue">${s.complete}%</strong></div></div>
+      <div class="card"><h2>${round?`Current round: ${escapeHtml(round.name)}`:"No execution round selected"}</h2><div class="progress"><i style="width:${s.complete}%"></i></div><p class="subtle" style="margin-top:10px">${round?.completedAt?"Completed "+dateTime(round.completedAt):"Live totals from the selected round's latest attempts."}</p></div>
+      <div class="card"><h2>Round statistics</h2>${d.rounds.length?`<div class="table-wrap"><table><thead><tr><th>Round</th><th>Type</th><th>Cases</th><th>Pass</th><th>Fail</th><th>Pending</th><th>Completion</th><th>State</th></tr></thead><tbody>${d.rounds.map(r=>{const x=roundSummary(r,d);return `<tr><td>${escapeHtml(r.name)}</td><td>${escapeHtml(r.type)}</td><td>${x.total}</td><td class="green">${x.passed}</td><td class="red">${x.failed}</td><td>${x.pending}</td><td>${x.complete}%</td><td>${r.completedAt?"Completed":"Open"}</td></tr>`}).join("")}</tbody></table></div>`:`<div class="empty">Execution rounds will appear here.</div>`}</div>
+      <div class="card"><h2>Project status</h2><p>${allLatest.length} of ${s.total} cases have an execution in the selected round. ${d.attempts.length} immutable attempt records are stored across ${d.rounds.length} rounds.</p></div>`;
+    }
+    function fieldsMarkup(d) {
+      return `<div class="card"><h2>Test case fields</h2><p class="subtle">Field IDs remain stable when labels change. Archived fields keep historical values and can be restored.</p><div style="margin-top:10px">${d.fields.sort((a,b)=>a.order-b.order).map((f,i)=>`<div class="field-row"><span class="grow"><strong>${escapeHtml(f.label)}</strong> <small>${escapeHtml(f.type)} · ${f.required?"required":"optional"} ${f.archived?"· archived":""}</small>${f.options?.length?`<br><small>Options: ${escapeHtml(f.options.join(", "))}</small>`:""}</span><button class="secondary move-field" data-id="${f.id}" data-dir="-1" ${i===0?"disabled":""}>↑</button><button class="secondary move-field" data-id="${f.id}" data-dir="1" ${i===d.fields.length-1?"disabled":""}>↓</button><button class="secondary edit-field" data-id="${f.id}">Configure</button><button class="secondary archive-field" data-id="${f.id}">${f.archived?"Restore":"Archive"}</button></div>`).join("")}</div><div class="actions" style="margin-top:14px"><button id="addField">Add field</button></div></div>`;
+    }
+    function sheetsMarkup(d) {
+      return `<div class="card"><h2>Workbook worksheets</h2><p class="subtle">Manage worksheet and column order, headers, visibility and field mappings for export.</p><div style="margin-top:10px">${d.worksheets.map((s,i)=>`<div class="sheet-row"><span class="grow"><strong>${escapeHtml(s.name)}</strong><small> · ${s.columns.filter(c=>c.visible!==false).length} visible columns</small></span><button class="secondary move-sheet" data-id="${s.id}" data-dir="-1" ${i===0?"disabled":""}>↑</button><button class="secondary move-sheet" data-id="${s.id}" data-dir="1" ${i===d.worksheets.length-1?"disabled":""}>↓</button><button class="secondary edit-sheet" data-id="${s.id}">Configure</button><button class="danger delete-sheet" data-id="${s.id}">Delete</button></div><div class="sheet-columns">${s.columns.map((c,j)=>`<div class="field-row"><span class="grow"><strong>${escapeHtml(c.label)}</strong><small> · ${escapeHtml(d.fields.find(f=>f.id===c.fieldId)?.label||"Unmapped")}${c.visible===false?" · hidden":""}</small></span><button class="secondary move-column" data-sheet="${s.id}" data-id="${c.id}" data-dir="-1" ${j===0?"disabled":""}>↑</button><button class="secondary move-column" data-sheet="${s.id}" data-id="${c.id}" data-dir="1" ${j===s.columns.length-1?"disabled":""}>↓</button><button class="secondary toggle-column" data-sheet="${s.id}" data-id="${c.id}">${c.visible===false?"Show":"Hide"}</button><button class="secondary map-column" data-sheet="${s.id}" data-id="${c.id}">Map field</button></div>`).join("")}</div>`).join("")||`<div class="empty">No worksheets configured.</div>`}</div><div class="actions" style="margin-top:14px"><button id="addSheet">Add worksheet</button></div></div>`;
+    }
+    function historyMarkup(d) {
+      const rows=d.attempts.sort((a,b)=>b.at-a.at).map(a=>{
+        const c=d.cases.find(x=>x.id===a.caseId), r=d.rounds.find(x=>x.id===a.roundId);
+        const pics=(a.evidenceIds||[]).map(id=>d.evidence.find(e=>e.id===id)).filter(Boolean);
+        const values=a.caseSnapshot||c?.values||{}, testId=values[d.fields.find(f=>f.label.toLowerCase()==="test case id")?.id]||a.caseLabel||"";
+        return `<tr data-round="${escapeHtml(a.roundId)}" data-status="${escapeHtml(a.status)}" data-test-id="${escapeHtml(testId)}" data-date="${new Date(a.at).toISOString().slice(0,10)}" data-values="${escapeHtml(JSON.stringify(values))}"><td>${escapeHtml(r?.name||"Deleted round")}</td><td>${escapeHtml(testId)}</td><td>${a.number}</td><td>${statusPill(a.status)}</td><td>${escapeHtml(a.actual)}</td><td>${dateTime(a.at)}</td><td>${escapeHtml(a.comments)}</td><td>${pics.map(e=>`<button class="evidence-link view-evidence" data-id="${e.id}">${escapeHtml(e.originalName)}</button>`).join("<br>")||"—"}</td></tr>`;
+      }).join("");
+      return `<div class="card"><div class="toolbar"><h2 style="margin:0">All execution attempts</h2><select id="historyRound"><option value="">All rounds</option>${d.rounds.map(r=>`<option value="${r.id}">${escapeHtml(r.name)}</option>`).join("")}</select><select id="historyStatus"><option value="">All statuses</option><option>Pass</option><option>Fail</option></select><input id="historySearch" type="search" placeholder="Test Case ID"><select id="historyField"><option value="">Any custom field</option>${d.fields.filter(f=>f.label.toLowerCase()!=="test case id").map(f=>`<option value="${f.id}">${escapeHtml(f.label)}</option>`).join("")}</select><input id="historyFieldValue" placeholder="Field contains"><input id="historyDate" type="date" aria-label="Execution date"></div><div class="table-wrap"><table><thead><tr><th>Round</th><th>Test case</th><th>Attempt</th><th>Status</th><th>Actual result</th><th>Executed</th><th>Comments</th><th>Evidence</th></tr></thead><tbody>${rows||`<tr><td colspan="8" class="empty">No execution attempts yet.</td></tr>`}</tbody></table></div></div>`;
+    }
+    function settingsMarkup(d) {
+      const p=d.projects.find(x=>x.id===projectId), counts={cases:d.cases.length,rounds:d.rounds.length,attempts:d.attempts.length,evidence:d.evidence.length};
+      return `<div class="card"><h2>Project settings</h2><div class="inline-form"><input id="projectName" value="${escapeHtml(p.name)}" aria-label="Project name"><button id="renameProject">Rename project</button><button class="secondary" id="archiveProject">${p.archived?"Unarchive":"Archive"} project</button></div><p class="subtle">${counts.cases} test cases · ${counts.rounds} rounds · ${counts.attempts} attempts · ${counts.evidence} screenshots</p><div class="actions" style="margin-top:14px"><button class="secondary" id="exportBackup">Export project backup</button><button class="secondary" id="importBackup">Import project backup</button><input id="backupFile" type="file" accept=".json,application/json" hidden><button class="danger" id="deleteProject">Delete project</button></div><div class="notice">Data is stored in this browser's IndexedDB. Export regular backups before clearing browser data. file:// storage behavior varies by browser. Recommended Windows launch: open PowerShell in this folder, run <code>python -m http.server 8000</code> (or <code>py -m http.server 8000</code>), then visit <code>http://localhost:8000/Test_Execution_Manager.html</code>. Stop the server with Ctrl+C. Excel import and ZIP export also require internet access to load ExcelJS/JSZip from the CDN.</div><div class="notice error" id="libStatus" style="display:none"></div></div>
+      <div class="card"><h2>Project portability</h2><p>Project backup includes case and field configuration, worksheet layouts, execution history, and screenshot binaries. Restoring a backup creates a separate project and does not overwrite existing data.</p></div>`;
+    }
+    async function setCurrentRound(id) {
+      const current=(await byProject("settings")).find(x=>x.key==="current")||{id:projectId+":current",projectId,key:"current",value:{}};
+      current.value={...current.value,currentRoundId:id||null}; await put("settings",current);
+    }
+    function bindPage(d) {
+      $$("#nav button").forEach(b=>b.onclick=()=>{page=b.dataset.page;render();});
+      if(page==="workspace") bindWorkspace(d);
+      if(page==="dashboard") {}
+      if(page==="fields") bindFields(d);
+      if(page==="worksheets") bindWorksheets(d);
+      if(page==="history") bindHistory();
+      if(page==="settings") bindSettings(d);
+      $("#generateReport")?.addEventListener("click",()=>generateReport().catch(fail));
+    }
+    function bindWorkspace(d) {
+      $("#addCase").onclick=()=>editableFields(d).some(field=>field.required&&(field.visible===false||field.label.toLowerCase()==="screenshot"))?openCaseDialog(null,d):$("#app .inline-case-row [data-first]")?.focus();
+      const inlineInputs=$$(".inline-case-input");
+      inlineInputs.forEach((input,index)=>input.addEventListener("keydown",e=>{
+        const last=index===inlineInputs.length-1;
+        if(e.key==="Enter"&&(input.tagName!=="TEXTAREA"||e.ctrlKey)){e.preventDefault();saveInlineCase(d);}
+        else if(e.key==="Tab"&&!e.shiftKey&&last){e.preventDefault();saveInlineCase(d);}
+      }));
+      $("#caseSearch").oninput=filterCaseRows; $("#statusFilter").onchange=filterCaseRows;
+      $("#selectAll").onchange=e=>{$$(".select-case").forEach(c=>{c.checked=e.target.checked;if(c.checked)selectedCases.add(c.value);else selectedCases.delete(c.value);});};
+      $$(".select-case").forEach(c=>c.onchange=()=>c.checked?selectedCases.add(c.value):selectedCases.delete(c.value));
+      $$(".edit-case").forEach(b=>b.onclick=()=>openCaseDialog(d.cases.find(c=>c.id===b.dataset.id),d));
+      $$(".mark-pass,.mark-fail").forEach(b=>b.onclick=()=>openExecution(b.dataset.id,d,b.dataset.status));
+      $$(".view-case-evidence").forEach(b=>b.onclick=()=>openEvidence(b.dataset.id).catch(fail));
+      $$(".duplicate-case").forEach(b=>b.onclick=async()=>{const c=d.cases.find(x=>x.id===b.dataset.id);if(!c)return;const clone=structuredClone(c);clone.id=uid();clone.createdAt=Date.now();const f=d.fields.find(x=>x.label==="Test Case ID");if(f)clone.values[f.id]=(clone.values[f.id]||"")+"-COPY";if(d.cases.some(x=>!x.archived&&x.values?.[f?.id]===clone.values[f?.id])){notify("Could not duplicate: the generated Test Case ID already exists.",true);return;}clone.pendingEvidenceIds=[];await put("cases",clone);await includeCaseInOpenRound(clone.id);notify("Test case duplicated.");render();});
+      $$(".archive-case").forEach(b=>b.onclick=async()=>{const c=d.cases.find(x=>x.id===b.dataset.id),active=d.rounds.find(r=>r.id===d.settings?.currentRoundId);if(active&&!active.completedAt&&active.caseIds.includes(b.dataset.id)){notify("Complete or switch away from the open round before archiving one of its cases.",true);return;}if(c&&await askConfirm("Archive this test case? Its execution history will be retained.",{danger:true,confirmText:"Archive"})){c.archived=true;await put("cases",c);render();}});
+      $$(".unarchive-case").forEach(b=>b.onclick=async()=>{const c=d.cases.find(x=>x.id===b.dataset.id);if(c){c.archived=false;await put("cases",c);render();}});
+      $("#toggleArchived").onclick=()=>{showArchivedCases=!showArchivedCases;selectedCases.clear();render();};
+      $("#bulkArchive").onclick=async()=>{if(!selectedCases.size){notify("Select at least one test case.",true);return;}const active=d.rounds.find(r=>r.id===d.settings?.currentRoundId);if(active&&!active.completedAt&&[...selectedCases].some(id=>active.caseIds.includes(id))){notify("Complete or switch away from the open round before archiving its cases.",true);return;}if(!await askConfirm(`Archive ${selectedCases.size} selected test case(s)?`,{danger:true,confirmText:"Archive"}))return;for(const id of selectedCases){const c=d.cases.find(x=>x.id===id);if(c){c.archived=true;await put("cases",c);}}selectedCases.clear();render();};
+      $("#roundSelect").onchange=async e=>{await setCurrentRound(e.target.value);render();};
+      $("#newRound").onclick=()=>createRound(d,"standard");
+      $("#retestRound").onclick=()=>createRound(d,"retest");
+      $("#regressionRound").onclick=()=>createRound(d,"regression");
+      $("#completeRound").onclick=async()=>{
+        const r=d.rounds.find(x=>x.id===d.settings.currentRoundId);
+        if(!r)return;
+        const summary=roundSummary(r,d);
+        if(summary.pending){notify(`Cannot complete this round: ${summary.pending} case(s) have no execution result.`,true);return;}
+        if(!r.caseIds.length){notify("Cannot complete an empty round.",true);return;}
+        if(await askConfirm(`Complete "${r.name}"? Its execution records will be locked.`,{confirmText:"Complete round"})){r.completedAt=Date.now();await put("rounds",r);notify("Round completed and locked.");render();}
+      };
+      $("#importExcel").onclick=()=>$("#excelFile").click();
+      $("#excelFile").onchange=async e=>{const file=e.target.files[0];if(file){await importWorkbook(file,d);e.target.value="";}};
+      const input=$("#caseSearch"); input.dataset.idField=d.fields.find(f=>f.label.toLowerCase()==="test case id")?.id||"";
+      $("#statusFilter").dataset.round=d.settings?.currentRoundId||"";
+    }
+    function filterCaseRows() {
+      const query=$("#caseSearch").value.toLowerCase(), status=$("#statusFilter").value, idField=$("#caseSearch").dataset.idField, roundId=$("#statusFilter").dataset.round;
+      $$("#app tbody tr").forEach(row=>{
+        if(row.classList.contains("inline-case-row")){row.hidden=false;return;}
+        const caseId=row.querySelector(".edit-case")?.dataset.id, text=row.textContent.toLowerCase();
+        let visible=text.includes(query);
+        if(status&&caseId){const c=window.__lastData?.cases.find(x=>x.id===caseId);const attempt=window.__lastData?.attempts.filter(a=>a.caseId===caseId&&a.roundId===roundId).sort((a,b)=>a.at-b.at).at(-1);visible=visible&&(attempt?.status||"Pending")===status;}
+        row.hidden=!visible;
+      });
+    }
+    async function saveInlineCase(d) {
+      const row=$("#app .inline-case-row"), values={};
+      if(!row)return;
+      for(const field of editableFields(d)){
+        const control=$(`[data-field="${CSS.escape(field.id)}"]`,row);
+        if(!control)continue;
+        values[field.id]=field.type==="checkbox"?control.checked:field.type==="multiselect"?[...control.selectedOptions].map(option=>option.value):control.value.trim();
+      }
+      if(!Object.values(values).some(value=>Array.isArray(value)?value.length>0:typeof value==="boolean"?value:String(value||"").trim().length>0)){
+        notify("Enter test case details before adding a row.",true);
+        return;
+      }
+      const missing=editableFields(d).find(field=>field.required&&field.label.toLowerCase()!=="screenshot"&&(!values[field.id]||(Array.isArray(values[field.id])&&!values[field.id].length)));
+      if(missing){notify(`${missing.label} is required.`,true);$(`[data-field="${CSS.escape(missing.id)}"]`,row)?.focus();return;}
+      const idField=d.fields.find(field=>field.label.toLowerCase()==="test case id");
+      const caseId=String(values[idField?.id]||"").trim();
+      if(idField&&d.cases.some(c=>!c.archived&&String(c.values?.[idField.id]||"").trim().toLowerCase()===caseId.toLowerCase())){
+        notify("That Test Case ID already exists.",true);$(`[data-field="${CSS.escape(idField.id)}"]`,row)?.focus();return;
+      }
+      const saved={id:uid(),projectId,values,createdAt:Date.now(),archived:false};
+      await put("cases",saved);await includeCaseInOpenRound(saved.id);
+      notify("Test case added.");
+      await render();
+      $("#app .inline-case-row [data-first]")?.focus();
+    }
+    async function includeCaseInOpenRound(caseId) {
+      const settings=(await byProject("settings")).find(item=>item.key==="current")?.value;
+      if(!settings?.currentRoundId)return;
+      const round=await req(db.transaction("rounds","readonly").objectStore("rounds").get(settings.currentRoundId));
+      if(!round||round.completedAt||round.projectId!==projectId)return;
+      round.caseIds=round.caseIds||[];
+      if(!round.caseIds.includes(caseId)){round.caseIds.push(caseId);await put("rounds",round);}
+    }
+    function openCaseDialog(record,d) {
+      const dialog=$("#caseDialog"), form=$("#caseForm"), container=$("#caseFields");
+      $("#caseTitle").textContent=record?"Edit test case":"Add test case";
+      let caseEvidenceFiles=[],casePreviewUrls=[];
+      container.innerHTML=editableFields(d).map(f=>{
+        const value=record?.values?.[f.id]??"";
+        let control;
+        if(f.label.toLowerCase()==="screenshot")return `<label class="wide">Screenshot evidence<input type="file" name="caseScreenshots" accept="image/*" multiple><div class="paste-zone" data-paste-zone tabindex="0" contenteditable="true" role="textbox" aria-label="Paste screenshots">Click here, then press Ctrl+V to paste screenshots. You can also drag images here.</div><button type="button" class="secondary" data-read-clipboard>Paste from clipboard</button><div class="thumbs case-preview"></div></label>`;
+        if(f.type==="longtext") control=`<textarea name="${escapeHtml(f.id)}" ${f.required?"required":""}>${escapeHtml(value)}</textarea>`;
+        else if(f.type==="dropdown") control=`<select name="${escapeHtml(f.id)}" ${f.required?"required":""}><option value="">Select…</option>${(f.options||[]).map(o=>`<option ${o===value?"selected":""}>${escapeHtml(o)}</option>`).join("")}</select>`;
+        else if(f.type==="multiselect") control=`<select name="${escapeHtml(f.id)}" multiple>${(f.options||[]).map(o=>`<option ${(Array.isArray(value)?value:[]).includes(o)?"selected":""}>${escapeHtml(o)}</option>`).join("")}</select>`;
+        else if(f.type==="checkbox") control=`<input type="checkbox" name="${escapeHtml(f.id)}" ${value?"checked":""}>`;
+        else control=`<input name="${escapeHtml(f.id)}" type="${f.type==="number"?"number":f.type==="date"?"date":"text"}" value="${escapeHtml(value)}" ${f.required?"required":""}>`;
+        return `<label class="${f.type==="longtext"?"wide":""}">${escapeHtml(f.label)}${f.required?" *":""}${control}</label>`;
+      }).join("");
+      const caseInput=form.elements.caseScreenshots;
+      if(caseInput)caseInput.onchange=()=>{
+        const chosen=[...caseInput.files],images=chosen.filter(file=>file.type.startsWith("image/"));
+        if(images.length!==chosen.length)notify("Only image files are supported.",true);
+        addCaseEvidence(images);
+      };
+      function addCaseEvidence(files) {
+        const valid=files.filter(file=>file.size<=15*1024*1024);
+        if(valid.length!==files.length)notify("Each screenshot must be 15 MB or smaller.",true);
+        caseEvidenceFiles.push(...valid);
+        casePreviewUrls.forEach(url=>URL.revokeObjectURL(url));casePreviewUrls=[];
+        const preview=$(".case-preview",form);
+        if(preview)preview.innerHTML=caseEvidenceFiles.map((file,index)=>{
+          const url=URL.createObjectURL(file);
+          casePreviewUrls.push(url);
+          return `<div class="evidence-preview"><img src="${url}" alt="${escapeHtml(file.name)}"><small>${escapeHtml(file.name)}</small><button type="button" data-remove-case-evidence="${index}" aria-label="Remove ${escapeHtml(file.name)}">×</button></div>`;
+        }).join("");
+      }
+      activeCaseEvidenceAdder=addCaseEvidence;
+      form.querySelectorAll("[data-paste-zone]").forEach(zone=>bindImageDrop(zone));
+      form.querySelectorAll("[data-read-clipboard]").forEach(button=>button.onclick=()=>readClipboardImages());
+      form.querySelector(".case-preview")?.addEventListener("click",event=>{
+        const button=event.target.closest("[data-remove-case-evidence]");if(!button)return;
+        caseEvidenceFiles.splice(Number(button.dataset.removeCaseEvidence),1);addCaseEvidence([]);
+      });
+      form.onsubmit=async e=>{
+        e.preventDefault(); const values={...(record?.values||{})};
+        for(const f of editableFields(d)){if(f.label.toLowerCase()==="screenshot")continue;const el=form.elements.namedItem(f.id);values[f.id]=f.type==="checkbox"?el.checked:f.type==="multiselect"?[...el.selectedOptions].map(x=>x.value):el.value.trim();}
+        const idField=d.fields.find(f=>f.label.toLowerCase()==="test case id");
+        if(idField&&d.cases.some(c=>c.id!==record?.id&&!c.archived&&String(c.values?.[idField.id]||"").toLowerCase()===String(values[idField.id]||"").toLowerCase())){notify("Test Case ID must be unique.",true);return;}
+        const requiredMissing=editableFields(d).find(f=>f.required&&(!values[f.id]||(Array.isArray(values[f.id])&&!values[f.id].length))&&!(f.label.toLowerCase()==="screenshot"&&caseEvidenceFiles.length));
+        if(requiredMissing){notify(`${requiredMissing.label} is required.`,true);return;}
+        const saved={...(record||{}),id:record?.id||uid(),projectId,values,createdAt:record?.createdAt||Date.now(),updatedAt:Date.now(),archived:false};
+        const priorIds=saved.pendingEvidenceIds||[];
+        const rows=caseEvidenceFiles.map((file,index)=>{
+          const evidenceId=uid(),caseId=values[d.fields.find(field=>field.label.toLowerCase()==="test case id")?.id]||"Test_Case";
+          const safeCase=String(caseId).replace(/[^a-z0-9_-]+/gi,"_"),ext=(file.name.match(/\.[a-z0-9]+$/i)||[".png"])[0].toLowerCase();
+          const storedName=`${safeCase}_Unassigned_Attempt0_${String(index+1).padStart(3,"0")}_${evidenceId.slice(0,8)}${ext}`;
+          return {metadata:{id:evidenceId,projectId,caseId:saved.id,caseLabel:String(caseId),roundId:null,attemptId:null,originalName:file.name,storedName,uploadedAt:Date.now(),mimeType:file.type||"image/png"},binary:{id:evidenceId,projectId,blob:file}};
+        });
+        saved.pendingEvidenceIds=[...priorIds,...rows.map(row=>row.metadata.id)];
+        try{await saveCaseEvidence(saved,rows);await includeCaseInOpenRound(saved.id);}catch(error){fail(error);return;}
+        activeCaseEvidenceAdder=null;dialog.close();notify(record?"Test case updated.":"Test case added.");render();
+      };
+      dialog.addEventListener("close",()=>{activeCaseEvidenceAdder=null;casePreviewUrls.forEach(url=>URL.revokeObjectURL(url));casePreviewUrls=[];},{once:true});
+      dialog.showModal();
+    }
+    async function createRound(d,type) {
+      const name=await askInput(type==="retest"?"New failed-only retest":type==="regression"?"New regression round":"New execution round","Round name",{value:type==="regression"?"Regression":type==="retest"?`Retest ${d.rounds.filter(r=>r.type==="retest").length+1}`:`Round ${d.rounds.length+1}`});
+      if(!name?.trim())return;
+      if(d.rounds.some(r=>r.name.toLowerCase()===name.trim().toLowerCase())){notify("A round with that name already exists.",true);return;}
+      let ids=d.cases.filter(c=>!c.archived).map(c=>c.id), sourceRoundId=null;
+      if(type==="retest"){
+        const completed=d.rounds.filter(r=>r.completedAt);
+        if(!completed.length){notify("Complete a round before starting a retest.",true);return;}
+        const choice=await askInput("Choose source round","Only failed cases from this completed round will be queued",{value:completed.at(-1).id,options:completed.map(r=>({value:r.id,label:r.name}))});
+        if(choice===null)return;
+        const source=completed.find(r=>r.id===choice);
+        if(!source){notify("Select a valid completed round.",true);return;}
+        sourceRoundId=source.id;
+        ids=(source.caseIds||[]).filter(id=>latestFor(id,source.id,d.attempts)?.status==="Fail"&&!d.cases.find(c=>c.id===id)?.archived);
+        if(!ids.length){notify("The selected round has no failed active cases to retest.",true);return;}
+      }
+      if(!ids.length){notify("Add at least one active test case before creating a round.",true);return;}
+      const round={id:uid(),projectId,name:name.trim(),type,sourceRoundId,caseIds:ids,createdAt:Date.now(),completedAt:null};
+      await put("rounds",round);await setCurrentRound(round.id);notify(`${type==="retest"?"Failed-only retest":type==="regression"?"Regression":"Execution"} round created.`);render();
+    }
+    async function openExecution(caseId,d,requestedStatus="Pass") {
+      let round=d.rounds.find(r=>r.id===d.settings?.currentRoundId);
+      if(!round){
+        if(!await askConfirm("There is no active round. Create a new round now?"))return;
+        await createRound(d,"standard");
+        const refreshed=await projectData();
+        refreshed.settings=(await byProject("settings")).find(item=>item.key==="current")?.value||{};
+        if(refreshed.settings.currentRoundId)return openExecution(caseId,refreshed,requestedStatus);
+        return;
+      }
+      if(round.completedAt){notify("Completed rounds are locked. Create another round to execute this test case.",true);return;}
+      if(!(round.caseIds||[]).includes(caseId)){notify("This test case is not included in the selected round.",true);return;}
+      const c=d.cases.find(x=>x.id===caseId), idField=d.fields.find(f=>f.label==="Test Case ID"), name=c?.values?.[idField?.id]||"Test case";
+      $("#executeTitle").textContent=`Execute ${name}`;$("#executionContext").textContent=`Round: ${round.name} · A new immutable attempt will be recorded.`;
+      const form=$("#executeForm");form.reset();clearEvidencePreview();activeAttemptFiles=[];
+      let existingEvidence=[];
+      if(c.pendingEvidenceIds?.length){
+        existingEvidence=(await Promise.all(c.pendingEvidenceIds.map(async id=>{
+          const [metadata,binary]=await Promise.all([
+            req(db.transaction("evidence","readonly").objectStore("evidence").get(id)),
+            req(db.transaction("evidenceBinary","readonly").objectStore("evidenceBinary").get(id))
+          ]);
+          return metadata&&binary?.blob?{metadata,binary}:null;
+        }))).filter(Boolean);
+        activePendingEvidence=existingEvidence;
+        renderExecutionEvidencePreview();
+      }
+      activeExecutionEvidenceAdder=addEvidenceFiles;
+      bindImageDrop($("#executeDialog [data-paste-zone]"));
+      $("#executeDialog [data-read-clipboard]").onclick=()=>readClipboardImages();
+      $("#preview").onclick=e=>{
+        const button=e.target.closest("[data-remove-attempt-evidence]");
+        if(!button)return;
+        activeAttemptFiles.splice(Number(button.dataset.removeAttemptEvidence),1);
+        renderExecutionEvidencePreview();
+      };
+      form.elements.actual.value=c?.values?.[d.fields.find(f=>f.label==="Actual Result")?.id]||"";
+      form.elements.status.value=requestedStatus==="Fail"?"Fail":"Pass";
+      form.elements.screenshots.onchange=()=>{
+        const chosen=[...form.elements.screenshots.files];
+        const images=chosen.filter(f=>f.type.startsWith("image/"));
+        if(images.length!==chosen.length)notify("Only image files are supported; non-image files were skipped.",true);
+        addEvidenceFiles(images);
+      };
+      form.onsubmit=async e=>{
+        e.preventDefault();
+        const files=activeAttemptFiles;
+        if(files.some(f=>f.size>15*1024*1024)){notify("Each screenshot must be 15 MB or smaller.",true);return;}
+        const previous=d.attempts.filter(a=>a.caseId===caseId&&a.roundId===round.id);
+        const attempt={id:uid(),projectId,caseId,roundId:round.id,number:previous.length+1,at:Date.now(),status:form.elements.status.value,actual:form.elements.actual.value.trim(),comments:form.elements.comments.value.trim(),evidenceIds:[]};
+        if(!attempt.actual){notify("Enter the actual result.",true);return;}
+        const evidenceRows=existingEvidence.map((row,index)=>{
+          const updatedMetadata={...row.metadata,roundId:round.id,attemptId:attempt.id,uploadedAt:row.metadata.uploadedAt};
+          updatedMetadata.storedName=`${String(name).replace(/[^a-z0-9_-]+/gi,"_")}_${round.name.replace(/[^a-z0-9_-]+/gi,"_")}_Attempt${attempt.number}_${String(index+1).padStart(3,"0")}_${updatedMetadata.id.slice(0,8)}${(updatedMetadata.originalName.match(/\.[a-z0-9]+$/i)||[".png"])[0].toLowerCase()}`;
+          attempt.evidenceIds.push(updatedMetadata.id);
+          return {metadata:updatedMetadata,binary:row.binary};
+        });
+        for(let i=0;i<files.length;i++){
+          const file=files[i], evidenceId=uid();
+          const safeRound=round.name.replace(/[^a-z0-9_-]+/gi,"_"), safeCase=String(name).replace(/[^a-z0-9_-]+/gi,"_");
+          const ext=(file.name.match(/\.[a-z0-9]+$/i)||[".png"])[0].toLowerCase();
+          const fileIndex=existingEvidence.length+i;
+          const storedName=`${safeCase}_${safeRound}_Attempt${attempt.number}_${String(fileIndex+1).padStart(3,"0")}_${evidenceId.slice(0,8)}${ext}`;
+          const metadata={id:evidenceId,projectId,caseId,caseLabel:name,roundId:round.id,attemptId:attempt.id,originalName:file.name,storedName,uploadedAt:Date.now(),mimeType:file.type||"image/png"};
+          evidenceRows.push({metadata,binary:{id:evidenceId,projectId,blob:file}});
+          attempt.evidenceIds.push(evidenceId);
+        }
+        const actualField=d.fields.find(f=>f.label==="Actual Result"), statusField=d.fields.find(f=>f.label==="Status"), commentsField=d.fields.find(f=>f.label==="Comments");
+        if(actualField)c.values[actualField.id]=attempt.actual;if(statusField)c.values[statusField.id]=attempt.status;if(commentsField)c.values[commentsField.id]=attempt.comments;
+        c.pendingEvidenceIds=[];
+        attempt.caseSnapshot=structuredClone(c.values);
+        try{await saveExecution(attempt,evidenceRows,c);}catch(error){fail(error);return;}
+        clearEvidencePreview();
+        activeExecutionEvidenceAdder=null;
+        $("#executeDialog").close();notify("Execution attempt saved.");render();
+      };
+      $("#executeDialog").showModal();
+    }
+    function clearEvidencePreview() {
+      executionPreviewUrls.forEach(url=>URL.revokeObjectURL(url));
+      executionPreviewUrls=[];
+      activePendingEvidence=[];
+      $("#preview").innerHTML="";
+    }
+    function addEvidenceFiles(files) {
+      if(!files.length)return;
+      const valid=files.filter(file=>file.size<=15*1024*1024);
+      if(valid.length!==files.length)notify("Each screenshot must be 15 MB or smaller.",true);
+      activeAttemptFiles.push(...valid);
+      renderExecutionEvidencePreview();
+    }
+    function renderExecutionEvidencePreview() {
+      executionPreviewUrls.forEach(url=>URL.revokeObjectURL(url));executionPreviewUrls=[];
+      const saved=activePendingEvidence.map(row=>{
+        const url=URL.createObjectURL(row.binary.blob);executionPreviewUrls.push(url);
+        return `<div class="evidence-preview" title="${escapeHtml(row.metadata.originalName)}"><img alt="${escapeHtml(row.metadata.originalName)}" src="${url}"><small>${escapeHtml(row.metadata.originalName)} · saved on case</small></div>`;
+      }).join("");
+      $("#preview").innerHTML=saved+activeAttemptFiles.map((file,index)=>{
+        const url=URL.createObjectURL(file);executionPreviewUrls.push(url);
+        return `<div class="evidence-preview" title="${escapeHtml(file.name)}"><img alt="${escapeHtml(file.name)}" src="${url}"><small>${escapeHtml(file.name)}</small><button type="button" data-remove-attempt-evidence="${index}" aria-label="Remove ${escapeHtml(file.name)}">×</button></div>`;
+      }).join("");
+    }
+    function bindImageDrop(zone) {
+      if(!zone||zone.dataset.imageDropBound)return;
+      zone.dataset.imageDropBound="true";
+      zone.addEventListener("paste",event=>{
+        const files=clipboardEventImages(event.clipboardData);
+        if(files.length){event.preventDefault();event.stopPropagation();appendImagesToOpenDialog(files);}
+      });
+      zone.addEventListener("dragover",event=>{event.preventDefault();zone.classList.add("dragging");});
+      zone.addEventListener("dragleave",()=>zone.classList.remove("dragging"));
+      zone.addEventListener("drop",event=>{
+        event.preventDefault();zone.classList.remove("dragging");
+        const files=[...(event.dataTransfer?.files||[])].filter(file=>file.type.startsWith("image/"));
+        if(files.length)appendImagesToOpenDialog(files);
+      });
+    }
+    function clipboardEventImages(clipboardData) {
+      const items=[...(clipboardData?.items||[])].filter(item=>item.type?.startsWith("image/"));
+      const files=items.map((item,index)=>{
+        const file=item.getAsFile?.();if(!file)return null;
+        const extension=(file.type.split("/")[1]||"png").replace("jpeg","jpg");
+        return new File([file],`pasted-screenshot-${Date.now()}-${index+1}.${extension}`,{type:file.type,lastModified:Date.now()});
+      }).filter(Boolean);
+      return files.length?files:[...(clipboardData?.files||[])].filter(file=>file.type.startsWith("image/"));
+    }
+    async function readClipboardImages() {
+      if(!navigator.clipboard?.read){notify("Clipboard image access is unavailable in this browser context. Copy the screenshot, click the paste area, and press Ctrl+V.",true);return;}
+      try{
+        const items=await navigator.clipboard.read(),files=[];
+        for(const item of items)for(const type of item.types.filter(value=>value.startsWith("image/"))){
+          const blob=await item.getType(type),extension=(type.split("/")[1]||"png").replace("jpeg","jpg");
+          files.push(new File([blob],`pasted-screenshot-${Date.now()}-${files.length+1}.${extension}`,{type,lastModified:Date.now()}));
+        }
+        if(!files.length){notify("The clipboard does not contain an image. Copy a screenshot first, then try again.",true);return;}
+        appendImagesToOpenDialog(files);
+      }catch(error){
+        console.error(error);
+        notify("Could not read the clipboard. Allow clipboard access for this page, or click the paste area and press Ctrl+V.",true);
+      }
+    }
+    function appendImagesToOpenDialog(files) {
+      if($("#executeDialog").open&&activeExecutionEvidenceAdder){activeExecutionEvidenceAdder(files);notify(`${files.length} screenshot${files.length===1?"":"s"} added. Save the attempt to keep the evidence.`);}
+      else if($("#caseDialog").open&&activeCaseEvidenceAdder){activeCaseEvidenceAdder(files);notify(`${files.length} screenshot${files.length===1?"":"s"} added to the test case.`);}
+    }
+    async function importWorkbook(file,d) {
+      if(!window.ExcelJS){throw new Error("ExcelJS could not be loaded. Check your internet connection, then reload the application.");}
+      if(!/\.xlsx$/i.test(file.name)){throw new Error("Only .xlsx workbooks are supported. Legacy .xls files are not supported.");}
+      const workbook=new ExcelJS.Workbook();await workbook.xlsx.load(await file.arrayBuffer());
+      if(!workbook.worksheets.length)throw new Error("The workbook contains no worksheets.");
+      if(!d.cases.length&&d.worksheets.length===1&&d.worksheets[0].name==="Test Case Master"&&!d.worksheets[0].imported){await remove("worksheets",d.worksheets[0].id);d.worksheets.length=0;}
+      const incomingNames=new Set(workbook.worksheets.map(s=>s.name.toLowerCase()));
+      for(const existing of d.worksheets)if(!incomingNames.has(existing.name.toLowerCase())){existing.order+=workbook.worksheets.length;await put("worksheets",existing);}
+      const fieldByLabel=new Map(d.fields.map(f=>[f.label.trim().toLowerCase(),f]));
+      const idField=d.fields.find(f=>f.label.trim().toLowerCase()==="test case id");
+      if(!idField)throw new Error("The required Test Case ID field is missing.");
+      let imported=0, updated=0;
+      const existingById=new Map(d.cases.map(c=>[String(c.values?.[idField.id]||"").toLowerCase(),c]));
+      for(let sheetIndex=0;sheetIndex<workbook.worksheets.length;sheetIndex++){
+        const sheet=workbook.worksheets[sheetIndex];
+        const headers=[], headerRow=sheet.getRow(1);
+        headerRow.eachCell({includeEmpty:true},(cell,col)=>{headers[col-1]=String(cell.text||cell.value||"").trim();});
+        if(!headers.some(Boolean))continue;
+        const columns=[];
+        for(let i=0;i<headers.length;i++){
+          const label=headers[i];if(!label)continue;
+          let field=fieldByLabel.get(label.toLowerCase());
+          if(!field){field={id:uid(),projectId,label,type:"text",required:false,visible:true,archived:false,options:[],system:false,order:d.fields.length};await put("fields",field);d.fields.push(field);fieldByLabel.set(label.toLowerCase(),field);}
+          columns.push({id:uid(),label,fieldId:field.id,order:i,visible:true});
+        }
+        const oldSheet=d.worksheets.find(s=>s.name.toLowerCase()===sheet.name.toLowerCase());
+        const ws=oldSheet||{id:uid(),projectId,name:sheet.name,visible:true,order:sheetIndex};
+        ws.name=sheet.name;ws.columns=columns;ws.order=sheetIndex;ws.imported=true;await put("worksheets",ws);
+        if(!oldSheet)d.worksheets.push(ws);
+        for(let rowNumber=2;rowNumber<=sheet.rowCount;rowNumber++){
+          const row=sheet.getRow(rowNumber);
+          const values={};
+          for(let col=0;col<columns.length;col++){
+            const cell=row.getCell(columns[col].order+1);
+            let value=cell.value;
+            if(value&&typeof value==="object"&&"text" in value)value=value.text;
+            if(value instanceof Date)value=value.toISOString().slice(0,10);
+            if(value!==null&&value!==undefined)values[columns[col].fieldId]=Array.isArray(value)?value.join(", "):String(value);
+          }
+          if(!Object.values(values).some(v=>String(v).trim()))continue;
+          if(!values[idField.id])values[idField.id]=`${sheet.name}-${rowNumber-1}`;
+          const key=String(values[idField.id]).toLowerCase(), found=existingById.get(key);
+          if(found){found.values={...found.values,...values};found.archived=false;await put("cases",found);updated++;}
+          else{const record={id:uid(),projectId,values,createdAt:Date.now(),archived:false};existingById.set(key,record);await put("cases",record);d.cases.push(record);imported++;}
+        }
+      }
+      notify(`Imported ${imported} new case(s), updated ${updated}, and loaded ${workbook.worksheets.length} worksheet(s).`);
+      render();
+    }
+    async function bindFields(d) {
+      $("#addField").onclick=async()=>{
+        const label=await askInput("Add field","Field label");if(!label?.trim())return;
+        if(d.fields.some(f=>f.label.toLowerCase()===label.trim().toLowerCase()&&!f.archived)){notify("A field with that label already exists.",true);return;}
+        const types=["text","longtext","number","dropdown","multiselect","date","checkbox"];
+        const type=await askInput("Choose field type","Type",{value:"text",options:types.map(x=>({value:x,label:x}))});
+        if(type===null)return;
+        if(!types.includes(type)){notify("Choose a supported field type.",true);return;}
+        const optionText=["dropdown","multiselect"].includes(type)?await askInput("Field options","Comma-separated values"):null;
+        const options=["dropdown","multiselect"].includes(type)?(optionText||"").split(",").map(x=>x.trim()).filter(Boolean):[];
+        if(["dropdown","multiselect"].includes(type)&&!options.length){notify("Dropdown fields need at least one option.",true);return;}
+        const f={id:uid(),projectId,label:label.trim(),type,required:false,visible:true,archived:false,options,system:false,order:d.fields.length};await put("fields",f);render();
+      };
+      $$(".edit-field").forEach(b=>b.onclick=async()=>{
+        const f=d.fields.find(x=>x.id===b.dataset.id);if(!f)return;
+        const label=await askInput("Configure field","Field label",{value:f.label});if(!label?.trim())return;
+        if(d.fields.some(x=>x.id!==f.id&&!x.archived&&x.label.toLowerCase()===label.trim().toLowerCase())){notify("Another active field already uses that label.",true);return;}
+        const types=["text","longtext","number","dropdown","multiselect","date","checkbox"];
+        const type=await askInput("Configure field","Field type",{value:f.type,options:types.map(x=>({value:x,label:x}))});if(type===null)return;
+        const required=await askInput("Field requirement","Required setting",{value:String(!!f.required),options:[{value:"true",label:"Required"},{value:"false",label:"Optional"}]});if(required===null)return;
+        const visible=await askInput("Field visibility","Workspace visibility",{value:String(f.visible!==false),options:[{value:"true",label:"Show in workspace"},{value:"false",label:"Hide in workspace"}]});if(visible===null)return;
+        let options=["dropdown","multiselect"].includes(type)?(f.options||[]):[];
+        if(["dropdown","multiselect"].includes(type)){
+          const known=d.cases.map(c=>c.values?.[f.id]).flatMap(v=>Array.isArray(v)?v:v?[v]:[]);
+          options=[...new Set([...options,...known.map(String)])];
+          const entry=await askInput("Configure dropdown","Comma-separated options",{value:options.join(", ")});if(entry===null)return;
+          options=entry.split(",").map(x=>x.trim()).filter(Boolean);if(!options.length){notify("At least one option is required.",true);return;}
+        }
+        const old=f.label;f.label=label.trim();f.type=type;f.required=required==="true";f.visible=visible==="true";f.options=options;await put("fields",f);
+        for(const s of d.worksheets)for(const col of s.columns)if(col.fieldId===f.id&&col.label===old)col.label=f.label;
+        for(const s of d.worksheets)await put("worksheets",s);
+        render();
+      });
+      $$(".archive-field").forEach(b=>b.onclick=async()=>{const f=d.fields.find(x=>x.id===b.dataset.id);if(!f)return;f.archived=!f.archived;await put("fields",f);render();});
+      $$(".move-field").forEach(b=>b.onclick=async()=>{const i=d.fields.findIndex(f=>f.id===b.dataset.id),j=i+Number(b.dataset.dir);if(j<0||j>=d.fields.length)return;[d.fields[i].order,d.fields[j].order]=[d.fields[j].order,d.fields[i].order];await Promise.all([put("fields",d.fields[i]),put("fields",d.fields[j])]);render();});
+    }
+    async function bindWorksheets(d) {
+      $("#addSheet").onclick=async()=>{
+        const name=await askInput("Add worksheet","Worksheet name");if(!name?.trim())return;
+        if(!validSheetName(name,d.worksheets)){notify("Worksheet name must be unique, 1–31 characters, and cannot contain : \\ / ? * [ ].",true);return;}
+        const columns=activeFields(d).map((f,i)=>({id:uid(),label:f.label,fieldId:f.id,order:i,visible:true}));
+        const sheet={id:uid(),projectId,name:name.trim(),order:d.worksheets.length,visible:true,columns};await put("worksheets",sheet);render();
+      };
+      $$(".edit-sheet").forEach(b=>b.onclick=async()=>{
+        const s=d.worksheets.find(x=>x.id===b.dataset.id);if(!s)return;
+        const name=await askInput("Configure worksheet","Worksheet name",{value:s.name});if(!name?.trim())return;
+        if(!validSheetName(name,d.worksheets,s.id)){notify("Worksheet name must be unique, 1–31 characters, and cannot contain : \\ / ? * [ ].",true);return;}
+        s.name=name.trim();
+        const visibleFields=activeFields(d), current=s.columns.map(c=>c.label).join(", ");
+        const labels=await askInput("Configure worksheet columns","Column labels in order (comma-separated)",{value:current,required:false});
+        if(labels!==null){
+          const labelsList=labels.split(",").map(x=>x.trim()).filter(Boolean);
+          s.columns=labelsList.map((label,i)=>{const prev=s.columns.find(c=>c.label.toLowerCase()===label.toLowerCase());const f=visibleFields.find(x=>x.label.toLowerCase()===label.toLowerCase());return {id:prev?.id||uid(),label,fieldId:f?.id||prev?.fieldId||null,order:i,visible:prev?.visible!==false};});
+        }
+        await put("worksheets",s);render();
+      });
+      $$(".delete-sheet").forEach(b=>b.onclick=async()=>{const s=d.worksheets.find(x=>x.id===b.dataset.id);if(s&&await askConfirm(`Delete worksheet "${s.name}"? Test cases will not be deleted.`,{danger:true,confirmText:"Delete"})){await remove("worksheets",s.id);render();}});
+      $$(".move-sheet").forEach(b=>b.onclick=async()=>{const i=d.worksheets.findIndex(s=>s.id===b.dataset.id),j=i+Number(b.dataset.dir);if(j<0||j>=d.worksheets.length)return;[d.worksheets[i].order,d.worksheets[j].order]=[d.worksheets[j].order,d.worksheets[i].order];await Promise.all([put("worksheets",d.worksheets[i]),put("worksheets",d.worksheets[j])]);render();});
+      $$(".toggle-column").forEach(b=>b.onclick=async()=>{const s=d.worksheets.find(x=>x.id===b.dataset.sheet),c=s?.columns.find(x=>x.id===b.dataset.id);if(!c)return;c.visible=c.visible===false;await put("worksheets",s);render();});
+      $$(".move-column").forEach(b=>b.onclick=async()=>{const s=d.worksheets.find(x=>x.id===b.dataset.sheet),i=s?.columns.findIndex(x=>x.id===b.dataset.id);if(!s||i<0)return;const j=i+Number(b.dataset.dir);if(j<0||j>=s.columns.length)return;[s.columns[i].order,s.columns[j].order]=[s.columns[j].order,s.columns[i].order];s.columns.sort((a,b)=>a.order-b.order);await put("worksheets",s);render();});
+      $$(".map-column").forEach(b=>b.onclick=async()=>{const s=d.worksheets.find(x=>x.id===b.dataset.sheet),c=s?.columns.find(x=>x.id===b.dataset.id);if(!s||!c)return;const choices=[{value:"",label:"Unmapped"},...d.fields.map(f=>({value:f.id,label:f.label}))];const fieldId=await askInput("Map worksheet column",`Column: ${c.label}`,{value:c.fieldId||"",options:choices});if(fieldId===null)return;c.fieldId=fieldId||null;await put("worksheets",s);render();});
+    }
+    function validSheetName(name,sheets,id) {
+      return name.trim().length>0&&name.trim().length<=31&&!/[:\\/?*\[\]]/.test(name)&&!sheets.some(s=>s.id!==id&&s.name.toLowerCase()===name.trim().toLowerCase());
+    }
+    function bindHistory() {
+      const apply=()=>{const round=$("#historyRound").value,status=$("#historyStatus").value,q=$("#historySearch").value.toLowerCase(),field=$("#historyField").value,fv=$("#historyFieldValue").value.toLowerCase(),date=$("#historyDate").value;$$("tbody tr",$("#app")).forEach(tr=>{let values={};try{values=JSON.parse(tr.dataset.values||"{}");}catch{}const fieldText=field?String(Array.isArray(values[field])?values[field].join(", "):values[field]||"").toLowerCase():"";tr.hidden=(round&&tr.dataset.round!==round)||(status&&tr.dataset.status!==status)||(q&&!tr.dataset.testId.toLowerCase().includes(q))||(field&&fv&&!fieldText.includes(fv))||(date&&tr.dataset.date!==date);});};
+      ["historyRound","historyStatus","historyField","historyDate"].forEach(id=>$("#"+id).onchange=apply);
+      ["historySearch","historyFieldValue"].forEach(id=>$("#"+id).oninput=apply);
+      $$(".view-evidence").forEach(b=>b.onclick=()=>openEvidence(b.dataset.id).catch(fail));
+    }
+    async function openEvidence(id) {
+      const [record,binary]=await Promise.all([
+        req(db.transaction("evidence","readonly").objectStore("evidence").get(id)),
+        req(db.transaction("evidenceBinary","readonly").objectStore("evidenceBinary").get(id))
+      ]);
+      if(!record||!binary?.blob)throw new Error("The screenshot binary is missing from browser storage.");
+      const url=URL.createObjectURL(binary.blob),win=window.open(url,"_blank");
+      if(!win){URL.revokeObjectURL(url);notify("Allow pop-ups to view the screenshot.",true);return;}
+      setTimeout(()=>URL.revokeObjectURL(url),60000);
+    }
+    async function bindSettings(d) {
+      $("#renameProject").onclick=async()=>{const p=d.projects.find(x=>x.id===projectId),name=$("#projectName").value.trim();if(!name){notify("Project name cannot be empty.",true);return;}p.name=name;await put("projects",p);notify("Project renamed.");render();};
+      $("#archiveProject").onclick=async()=>{const p=d.projects.find(x=>x.id===projectId);p.archived=!p.archived;await put("projects",p);notify(p.archived?"Project archived.":"Project restored.");render();};
+      $("#deleteProject").onclick=async()=>{if(!await askConfirm("Permanently delete this project and all its cases, rounds, execution history and screenshots? Export a backup first if needed.",{danger:true,confirmText:"Delete project"}))return;for(const store of STORE_NAMES.filter(x=>x!=="projects"))await removeProjectRecords(store,projectId);await remove("projects",projectId);const projects=await all("projects");if(!projects.length){projectId=null;await seed();}else projectId=projects[0].id;notify("Project deleted.");render();};
+      $("#exportBackup").onclick=()=>exportBackup().catch(fail);
+      $("#importBackup").onclick=()=>$("#backupFile").click();
+      $("#backupFile").onchange=async e=>{if(e.target.files[0]){await importBackup(e.target.files[0]);e.target.value="";}};
+      $("#libStatus").style.display=(!window.ExcelJS||!window.JSZip)?"block":"none";
+      if(!window.ExcelJS||!window.JSZip)$("#libStatus").textContent="ExcelJS or JSZip could not be loaded. Excel/ZIP actions require an internet connection to load the libraries; application data remains available.";
+    }
+    $("#projectSelect").onchange=e=>{projectId=e.target.value;selectedCases.clear();render();};
+    $("#newProject").onclick=async()=>{const name=await askInput("Create project","Project name");if(!name?.trim())return;const p={id:uid(),name:name.trim(),createdAt:Date.now(),archived:false};await put("projects",p);projectId=p.id;
+      for(const [index,[label,type,required]] of defaultFields.entries())await put("fields",{id:uid(),projectId,label,type,required,visible:true,archived:false,options:type==="dropdown"&&label==="Status"?["Pending","Pass","Fail"]:[],system:true,order:index});
+      const fs=(await byProject("fields")).sort((a,b)=>a.order-b.order);await put("worksheets",{id:uid(),projectId,name:"Test Case Master",order:0,visible:true,columns:fs.map((f,i)=>({id:uid(),label:f.label,fieldId:f.id,order:i,visible:true}))});page="workspace";render();};
+    $$("[data-close]").forEach(b=>b.onclick=()=>b.closest("dialog").close());
+    $("#caseDialog").addEventListener("click",e=>{if(e.target===e.currentTarget)e.currentTarget.close();});
+    $("#executeDialog").addEventListener("click",e=>{if(e.target===e.currentTarget)e.currentTarget.close();});
+    document.addEventListener("click",e=>{const b=e.target.closest(".execute-case");if(b)openExecution(b.dataset.id,window.__lastData).catch(fail);});
+    document.addEventListener("paste",e=>{
+      const dialog=e.target.closest?.("dialog[open]")||[...$$("dialog[open]")].at(-1);
+      if(!dialog)return;
+      const files=clipboardEventImages(e.clipboardData);
+      if(files.length){e.preventDefault();appendImagesToOpenDialog(files);}
+    });
+    $("#executeDialog").addEventListener("close",()=>{clearEvidencePreview();activeExecutionEvidenceAdder=null;});
+    $("#caseDialog").addEventListener("close",()=>{activeCaseEvidenceAdder=null;});
+    async function initialize() {
+      try { db=await openDB(); await seed(); await render(); }
+      catch(error){fail(error);$("#app").innerHTML=`<div class="card"><h2>Application storage unavailable</h2><p>${escapeHtml(error.message)}</p><p>Enable IndexedDB in a current version of Chrome or Edge and reopen this page. If opened as a local file, try a lightweight local web server.</p></div>`;}
+    }
+    const renderImpl=render;
+    render=async function(){await renderImpl();window.__lastData=await projectData();window.__lastData.settings=(await byProject("settings")).find(x=>x.key==="current")?.value||{};};
+    initialize();
+    function saveBlob(blob,name) {
+      const link=document.createElement("a"), url=URL.createObjectURL(blob);
+      link.href=url;link.download=name;document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
+    }
+    async function exportBackup() {
+      const data=await projectData(), current=data.projects.find(p=>p.id===projectId);
+      if(!current)throw new Error("The current project could not be found.");
+      const binaries=await byProject("evidenceBinary"), encoded=[];
+      for(const row of binaries)encoded.push({id:row.id,data:await blobToDataUrl(row.blob)});
+      const settings=(await byProject("settings")).filter(s=>s.projectId===projectId);
+      const payload={format:"TEM-BACKUP",version:1,exportedAt:Date.now(),project:current,fields:data.fields,worksheets:data.worksheets,cases:data.cases,rounds:data.rounds,attempts:data.attempts,evidence:data.evidence,binaries,settings};
+      saveBlob(new Blob([JSON.stringify(payload)],{type:"application/json"}),`${fileSlug(current.name)}_backup.json`);
+      notify("Project backup downloaded.");
+    }
+    function blobToDataUrl(blob) {
+      return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(reader.error||new Error("Could not encode screenshot backup."));reader.readAsDataURL(blob);});
+    }
+    function dataUrlToBlob(dataUrl) {
+      const [meta,data]=dataUrl.split(","), mime=meta.match(/data:([^;]+)/)?.[1]||"application/octet-stream";
+      const binary=atob(data), bytes=new Uint8Array(binary.length);for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
+      return new Blob([bytes],{type:mime});
+    }
+    async function importBackup(file) {
+      if(!/\.json$/i.test(file.name))throw new Error("Choose a project backup JSON file.");
+      let payload;try{payload=JSON.parse(await file.text());}catch{throw new Error("The backup file is not valid JSON.");}
+      const required=["fields","worksheets","cases","rounds","attempts","evidence","binaries"];
+      if(payload?.format!=="TEM-BACKUP"||payload.version!==1||!payload.project?.name||required.some(k=>!Array.isArray(payload[k])))throw new Error("This file is not a supported Test Execution Manager backup.");
+      const oldId=payload.project.id, newId=uid(), cloneRecord=x=>({...x,projectId:newId});
+      const project={...payload.project,id:newId,name:`${payload.project.name} (restored)`,createdAt:Date.now(),archived:false};
+      const ids=new Set();
+      for(const item of payload.binaries){if(!item.id||typeof item.data!=="string"||!item.data.startsWith("data:"))throw new Error("Backup contains invalid screenshot data.");ids.add(item.id);}
+      for(const evidence of payload.evidence)if(!ids.has(evidence.id))throw new Error(`Backup is missing screenshot data for ${evidence.originalName||evidence.id}.`);
+      await put("projects",project);
+      try {
+        for(const store of ["fields","worksheets","cases","rounds","attempts","evidence"])for(const item of payload[store])await put(store,cloneRecord(item));
+        for(const item of payload.binaries)await put("evidenceBinary",{id:item.id,projectId:newId,blob:dataUrlToBlob(item.data)});
+        for(const item of payload.settings||[])await put("settings",{...item,id:newId+":"+item.key,projectId:newId});
+      } catch(error) {
+        for(const store of STORE_NAMES.filter(x=>x!=="projects"))await removeProjectRecords(store,newId);
+        await remove("projects",newId);throw error;
+      }
+      projectId=newId;notify(`Project "${project.name}" restored as a separate project.`);render();
+    }
+    function fileSlug(value) { return safeText(value).normalize("NFKD").replace(/[^a-z0-9_-]+/gi,"_").replace(/^_+|_+$/g,"")||"Test_Execution"; }
+    function excelSafeName(name,used) {
+      let clean=safeText(name).replace(/[:\\/?*\[\]]/g,"_").slice(0,31)||"Sheet";
+      let candidate=clean,n=2;while(used.has(candidate.toLowerCase())){const suffix=`_${n++}`;candidate=clean.slice(0,31-suffix.length)+suffix;}
+      used.add(candidate.toLowerCase());return candidate;
+    }
+    function addTableSheet(workbook,name,headers,rows,used) {
+      const sheet=workbook.addWorksheet(excelSafeName(name,used));
+      sheet.addRow(headers);for(const row of rows)sheet.addRow(row);
+      sheet.views=[{state:"frozen",ySplit:1}];
+      sheet.autoFilter={from:{row:1,column:1},to:{row:1,column:Math.max(headers.length,1)}};
+      sheet.getRow(1).height=26;sheet.getRow(1).font={bold:true,color:{argb:"FFFFFFFF"}};sheet.getRow(1).fill={type:"pattern",pattern:"solid",fgColor:{argb:"FF173D69"}};
+      sheet.columns=headers.map((header,i)=>({key:String(i),width:Math.min(48,Math.max(14,String(header).length+4))}));
+      for(let r=2;r<=sheet.rowCount;r++){
+        const statusCell=sheet.getRow(r).values.find(v=>["Pass","Fail","Pending"].includes(v));
+        if(statusCell){const cell=sheet.getRow(r).getCell(sheet.getRow(r).values.indexOf(statusCell));cell.fill={type:"pattern",pattern:"solid",fgColor:{argb:statusCell==="Pass"?"FFE5F5EC":statusCell==="Fail"?"FFFFEAEC":"FFFFF4DB"}};}
+      }
+      return sheet;
+    }
+    async function buildWorkbook(d, paths) {
+      if(!window.ExcelJS)throw new Error("ExcelJS could not be loaded. Check your internet connection and reload the application.");
+      const workbook=new ExcelJS.Workbook();workbook.creator="Test Execution Manager";workbook.created=new Date();
+      const used=new Set(), active=d.cases.filter(c=>!c.archived), fields=d.fields.filter(f=>!f.archived);
+      const idField=d.fields.find(f=>f.label.toLowerCase()==="test case id");
+      const total=active.length, latestCurrent=d.rounds.find(r=>r.id===d.settings?.currentRoundId)||d.rounds.filter(r=>r.completedAt).at(-1);
+      const currentResults=latestCurrent?active.map(c=>latestFor(c.id,latestCurrent.id,d.attempts)).filter(Boolean):[];
+      const summaryRows=[
+        ["Project name",d.projects.find(p=>p.id===projectId)?.name||""],["Report generated",new Date().toLocaleString()],
+        ["Total test cases",total],["Total rounds",d.rounds.length],
+        ["Total passed",currentResults.filter(a=>a.status==="Pass").length],["Total failed",currentResults.filter(a=>a.status==="Fail").length],
+        ["Total pending",Math.max(0,total-currentResults.length)],
+        ["Completion percentage",latestCurrent?`${roundSummary(latestCurrent,d).complete}%`:"0%"]
+      ];
+      addTableSheet(workbook,"Project Summary",["Metric","Value"],summaryRows,used);
+      const byEvidence=new Map(d.evidence.map(e=>[e.id,e]));
+      const caseId=c=>c.values?.[idField?.id]||"";
+      const refsForAttempt=a=>(a.evidenceIds||[]).map(id=>paths.get(id)||`Missing evidence: ${byEvidence.get(id)?.storedName||id}`).join("; ");
+      const masterHeaders=fields.map(f=>f.label);
+      addTableSheet(workbook,"Test Case Master",masterHeaders,active.map(c=>fields.map(f=>Array.isArray(c.values?.[f.id])?c.values[f.id].join(", "):c.values?.[f.id]??"")),used);
+      for(const config of d.worksheets.filter(s=>s.visible!==false)){
+        const columns=config.columns.filter(c=>c.visible!==false), rows=active.map(c=>columns.map(col=>col.fieldId?c.values?.[col.fieldId]??"":c.values?.[fields.find(f=>f.label.toLowerCase()===col.label.toLowerCase())?.id]??""));
+        addTableSheet(workbook,config.name,columns.map(c=>c.label),rows,used);
+      }
+      const historyHeaders=["Test Case ID","Round Name","Attempt Number","Previous Status","Current Status","Actual Result","Execution Date and Time","Screenshot References","Comments",...fields.map(f=>f.label)];
+      const snapshotCells=a=>fields.map(f=>{const values=a.caseSnapshot||d.cases.find(c=>c.id===a.caseId)?.values||{};return Array.isArray(values[f.id])?values[f.id].join(", "):values[f.id]??"";});
+      for(const round of d.rounds){
+        const rows=d.attempts.filter(a=>a.roundId===round.id).sort((a,b)=>a.at-b.at).map(a=>{
+          const prior=d.attempts.filter(x=>x.caseId===a.caseId&&x.roundId===a.roundId&&x.at<a.at).sort((x,y)=>y.at-x.at)[0];
+          const snap=a.caseSnapshot||d.cases.find(c=>c.id===a.caseId)||{values:{}};
+          return [caseId({values:snap}),round.name,a.number,prior?.status||"",a.status,a.actual,dateTime(a.at),refsForAttempt(a),a.comments,...snapshotCells(a)];
+        });
+        addTableSheet(workbook,round.name,historyHeaders,rows,used);
+      }
+      const historyRows=d.attempts.sort((a,b)=>a.at-b.at).map(a=>{
+        const c=d.cases.find(x=>x.id===a.caseId),r=d.rounds.find(x=>x.id===a.roundId);
+        const prior=d.attempts.filter(x=>x.caseId===a.caseId&&x.at<a.at).sort((x,y)=>y.at-x.at)[0];
+        const snap=a.caseSnapshot||c?.values||{};
+        return [caseId({values:snap}),r?.name||"",a.number,prior?.status||"",a.status,a.actual,dateTime(a.at),refsForAttempt(a),a.comments,...snapshotCells(a)];
+      });
+      addTableSheet(workbook,"Execution History",historyHeaders,historyRows,used);
+      return workbook.xlsx.writeBuffer();
+    }
+    function makeViewer(data) {
+      const json=JSON.stringify(data).replace(/</g,"\\u003c").replace(/\u2028/g,"\\u2028").replace(/\u2029/g,"\\u2029");
+      return `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Evidence Viewer — ${escapeHtml(data.project.name)}</title>
+      <style>body{font:14px Arial,sans-serif;color:#17263d;background:#f4f7fb;margin:0}header{background:#10233f;color:#fff;padding:22px 5vw}main{max-width:1250px;margin:22px auto;padding:0 16px}.box{background:#fff;border:1px solid #e1e8f0;border-radius:10px;padding:17px;margin-bottom:15px}.filters{display:flex;gap:8px;flex-wrap:wrap}input,select{padding:9px;border:1px solid #ccd7e4;border-radius:6px}table{border-collapse:collapse;width:100%;background:#fff}th,td{text-align:left;padding:10px;border-bottom:1px solid #e8edf3;vertical-align:top}th{background:#f5f8fc}img.thumb{width:80px;height:60px;object-fit:cover;border-radius:5px;cursor:pointer;margin:3px}.pill{font-weight:bold}.Pass{color:#218653}.Fail{color:#c33c4b}.Pending{color:#a86a00}#modal{position:fixed;inset:0;background:#000b;display:none;align-items:center;justify-content:center}#modal img{max-width:88vw;max-height:82vh}#modal button{position:absolute;top:15px;right:20px;padding:10px}</style>
+      <header><h1>${escapeHtml(data.project.name)} — Evidence Viewer</h1><div id="summary"></div></header><main><section class="box"><div class="filters"><input id="q" placeholder="Search Test Case ID"><select id="round"><option value="">All rounds</option>${data.rounds.map(r=>`<option>${escapeHtml(r.name)}</option>`).join("")}</select><select id="status"><option value="">All statuses</option><option>Pass</option><option>Fail</option><option>Pending</option></select><select id="field"><option value="">Filter field</option>${data.fields.map(f=>`<option value="${escapeHtml(f.id)}">${escapeHtml(f.label)}</option>`).join("")}</select><input id="fieldValue" placeholder="Field contains"></div></section><section class="box"><h2>Round statistics</h2><div id="roundStats"></div></section><section class="box"><h2>Test cases and execution history</h2><div style="overflow:auto"><table><thead id="thead"></thead><tbody id="body"></tbody></table></div></section></main><div id="modal"><button onclick="this.parentNode.style.display='none'">Close</button><img></div>
+      <script>const D=${json};const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));const idf=D.fields.find(f=>f.label.toLowerCase()==="test case id");const caseName=c=>c.values[idf?.id]||"";const attemptsFor=c=>D.attempts.filter(a=>a.caseId===c.id).sort((a,b)=>a.at-b.at);document.getElementById("summary").textContent=D.cases.length+" test cases · "+D.rounds.length+" rounds · "+D.attempts.length+" attempts";document.getElementById("roundStats").innerHTML="<table><tr><th>Round</th><th>Type</th><th>Cases</th><th>Pass</th><th>Fail</th><th>Pending</th></tr>"+D.rounds.map(r=>{let aa=r.caseIds.map(id=>D.attempts.filter(a=>a.caseId===id&&a.roundId===r.id).sort((a,b)=>a.at-b.at).at(-1)).filter(Boolean);let p=aa.filter(a=>a.status==="Pass").length,f=aa.filter(a=>a.status==="Fail").length;return "<tr><td>"+esc(r.name)+"</td><td>"+esc(r.type)+"</td><td>"+r.caseIds.length+"</td><td>"+p+"</td><td>"+f+"</td><td>"+(r.caseIds.length-aa.length)+"</td></tr>"}).join("")+"</table>";const cols=D.fields.map(f=>f.label);document.getElementById("thead").innerHTML="<tr>"+cols.map(c=>"<th>"+esc(c)+"</th>").join("")+"<th>Round</th><th>Attempt</th><th>Execution</th><th>Evidence</th></tr>";function render(){const q=document.getElementById("q").value.toLowerCase(),rn=document.getElementById("round").value,st=document.getElementById("status").value,field=document.getElementById("field").value,fv=document.getElementById("fieldValue").value.toLowerCase();let rows=[];for(const c of D.cases){for(const a of attemptsFor(c)){const r=D.rounds.find(x=>x.id===a.roundId);if(rn&&r?.name!==rn||st&&a.status!==st||q&&!String(caseName(c)).toLowerCase().includes(q)||field&&fv&&!String(c.values[field]??"").toLowerCase().includes(fv))continue;rows.push({c,a,r})}if(!attemptsFor(c).length&&!st&&!rn&&!q)rows.push({c,a:null,r:null})}document.getElementById("body").innerHTML=rows.map(({c,a,r})=>"<tr>"+D.fields.map(f=>"<td>"+esc(Array.isArray(c.values[f.id])?c.values[f.id].join(", "):c.values[f.id]??"")+"</td>").join("")+"<td>"+esc(r?.name||"—")+"</td><td>"+(a?.number||"—")+"</td><td>"+(a?'<span class=\\"pill '+esc(a.status)+'\\">'+esc(a.status)+'</span><br>'+esc(a.actual)+"<br>"+esc(new Date(a.at).toLocaleString())+"<br>"+esc(a.comments):"—")+"</td><td>"+(a?(a.evidenceIds||[]).map(id=>{const e=D.evidence.find(x=>x.id===id);return e?'<img class=\\"thumb\\" src=\\"'+esc(e.path)+'\\" alt=\\"'+esc(e.originalName)+'\\" title=\\"'+esc(e.originalName)+'\\" onclick=\\"showImage(this.src,this.alt)\\">':""}).join(""):"—")+"</td></tr>").join("")||'<tr><td colspan="'+(D.fields.length+4)+'">No matching records.</td></tr>'}function showImage(src,alt){const m=document.getElementById("modal");m.querySelector("img").src=src;m.querySelector("img").alt=alt;m.style.display="flex"}document.querySelectorAll("input,select").forEach(x=>x.addEventListener("input",render));render();<\/script></html>`;
+    }
+    async function generateReport() {
+      if(!window.JSZip)throw new Error("JSZip could not be loaded. Check your internet connection and reload the application.");
+      const d=await projectData();d.settings=(await byProject("settings")).find(s=>s.key==="current")?.value||{};
+      const project=d.projects.find(p=>p.id===projectId);
+      if(!project)throw new Error("The current project could not be found.");
+      const zip=new JSZip(), evidenceFolder=zip.folder("Evidence"), paths=new Map(), viewerEvidence=[];
+      for(const evidence of d.evidence){
+        const round=d.rounds.find(r=>r.id===evidence.roundId), folder=fileSlug(round?.name||"Unassigned_Round");
+        const path=`Evidence/${folder}/${evidence.storedName}`;
+        const binary=await req(db.transaction("evidenceBinary","readonly").objectStore("evidenceBinary").get(evidence.id));
+        if(!binary?.blob)throw new Error(`Missing screenshot data for "${evidence.originalName}". Restore a project backup or remove the broken evidence reference before generating this report.`);
+        evidenceFolder.folder(folder).file(evidence.storedName,binary.blob);
+        paths.set(evidence.id,path);viewerEvidence.push({...evidence,path});
+      }
+      const workbookBytes=await buildWorkbook(d,paths);
+      zip.file("Test_Execution_Report.xlsx",workbookBytes);
+      const viewerData={project,fields:d.fields.filter(f=>!f.archived),worksheets:d.worksheets,rounds:d.rounds,cases:d.cases.filter(c=>!c.archived),attempts:d.attempts,evidence:viewerEvidence};
+      const worksheetPanel=`<section class="box"><h2>Configured worksheets</h2><ul>${viewerData.worksheets.map(s=>`<li><strong>${escapeHtml(s.name)}</strong> — ${escapeHtml(s.columns.filter(c=>c.visible!==false).map(c=>c.label).join(", "))}</li>`).join("")}</ul></section>`;
+      zip.file("EvidenceViewer.html",makeViewer(viewerData).replace('<section class="box"><h2>Round statistics</h2>',`${worksheetPanel}<section class="box"><h2>Round statistics</h2>`));
+      zip.file("README.txt",`Test Execution Manager report\n\nProject: ${project.name}\nGenerated: ${new Date().toLocaleString()}\n\nOpen EvidenceViewer.html in a modern browser to browse test cases, rounds, execution history and screenshot evidence offline. Keep the Evidence folder beside the HTML file. Open Test_Execution_Report.xlsx for the configured worksheets and complete attempt history.\n\nThe viewer does not require the application, internet access, or a server. Screenshots are referenced by relative paths within Evidence/.\n\nWorkbook generation uses ExcelJS. Imported Excel cell values, worksheet names/order, column headers and mapped data are preserved where the application supports them. Advanced Excel themes, macros, pivot tables, drawings, external links and some formula/formatting details are not preserved. Only .xlsx input is accepted.`);
+      const blob=await zip.generateAsync({type:"blob",compression:"DEFLATE",compressionOptions:{level:6}});
+      saveBlob(blob,`${fileSlug(project.name)}_Test_Execution_Report.zip`);notify("Final report ZIP generated.");
+    }
+  })();
+  </script>
+</body>
+</html>
