@@ -6,6 +6,11 @@ A single-file, browser-based tool for QA engineers to manage manual test cases, 
 
 Everything lives in one HTML file. There's no backend, no build step and no account. Your data stays in your browser's IndexedDB.
 
+
+![Test case workspace with an execution round in progress](docs/images/cases.png)
+
+![Execution dashboard](docs/images/dashboard.png)
+
 ---
 
 ## Features
@@ -280,3 +285,7 @@ test-management-qa/
 ## Contributing
 
 Issues and pull requests are welcome. Because the app is one file, make your changes in `Test_Execution_Manager.html` and test them by serving it locally as described above.
+
+## License
+
+[MIT](LICENSE)
